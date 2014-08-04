@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css">
+
+        <script type="text/javascript" src="static/js/jquery-2.1.1.min.js"></script>
+        <script type="text/javascript" src="static/js/bootstrap.min.js"></script>
+
+        <script type="text/javascript" src="http://coffeescript.org/extras/coffee-script.js"> </script>
+
+        <title> Hunt Online </title>
+    </head>
+
+    <body>
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation"> 
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#"> Hunt </a>
+            </div>
+
+            <div>
+                <ul class="nav navbar-nav">
+                    <li> <a href="#"> Play </a> </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content">
+            <canvas id="game" width="200" height="200"> </canvas>
+        </div>
+
+        <script type="text/coffeescript">
+
+            s = " ************ * ** **   * *** **    ** **  *   * *    **  ** ***\n  * * *  *  * *  ** * ** *  ** *   * *  * ** *** *   *** *  * * \n * * * *  ** * *  * *  * **   **  ** * * * **  * *  *  * * *  **\n** *  **  * * * *  * * * * * * * ** ** * *  * * ** * * * *  *  *\n* **   *  * *** ** * * * *  ** ** * *  * ** * *  * * * * ***** *\n*  * * *  *    *   * * * ** * * * * ** *  * * *** * * * *     **\n***  ** ** **** ** *** **  *  ** ** *  ** * *   * * * * * **** *\n  * * * * * * **  *  *  ** * * *  * * * * * ** * * * * * * *  * \n ** * * * * **  *  * ** *  *   ** * **     * * * * * * * * ** **\n *    * * ** * **  *  * **  *** * *  ***** * **  * * * * ** ** *\n *  *** *  * * * * * * *  ** *  * * *    * *  * ***  *  * *  *  \n * *  *  * * * * * * * * * ** * *   ** *  * ** *  ** *  ** * *  \n * ** *  * * * *** *   *  * * *   ** * *     *  *  * *** *** *  \n * * * * * * *    ***** * *    ** * ** *  ** ** * * *  **  * ** \n  ** * * * * ** *   *  ** * ** *  * * **  * *   * * * *  ***  **\n   ** ** * * * * *** *  *    * ***  *  ** * **** *  * * *    *  \n ** *    * * * *   * * * ** * *   * *** * *     * *  *   *****  \n* * *****  * * *   *  *   * * * * *   *** *** * *  * *    *  *  \n* *     * * ** *    ** ** * * * * ****  **  * * ** * *  *  **** \n* *  ** * * * * * * * * ** ** ** * * * * ** * * *  * * ****     \n* *   * * * * * **  *    *   * * * * *  * * * * **** *   * **   \n* * *  ** * * ** **  **** ***  * * * ** *  * * *  *  **** * *   \n* * *   ** * * *  ** *  *    * * * ** ** * * * *** *  *  * **  *\n* * * *  *   *  ** * * * **** * * * *   *  * *  * * *  * *  * * \n* * * ** *** *    ** * * *  * * * *  ** ** * ** *  **  * ** * **\n*  **  *    ***** * ** * *  * * ***** *  * *  ***   *  *  * *  *\n***  * *****    *  * * * *  ** *    *  * * * *   ** *** * * * * \n   * *   * * ** *  * * * **  ** *** ** * * ** *** *   *  * *  * \n **   *** * * * *  * * **  *  * * * *  * *  * * * ** * * * **  *\n * **** * * * * *** **  ** ** ** ** ** * ** * * *  *  * * *  *  \n   *   * ** *     * * *  *  *   *   *  *  * * * * * * * * * * **\n  **** *  * *    ** * ** ** ** * *** * ** * * *   * ** ** * * * \n *   * ***  *    * * * *  *  * * * * *  ** * **** **   * ** * * \n* **  *  **  *   * * * **  *     * **  *  **    **  **    *   **\n* * * * *  * * *  ** *  *  * *  * * *   *   **** *** * *** ** * \n* * * *  * * * **  * ** ** * *  * * *    ** *  *  *  *   *  * **\n* * * ****  * * ** *  *  * * ** * * * ** ** ** * *  * *   * *  *\n* * *    *  * * *  ** * * **  * * * * **  *  *   **  *  * * **  \n* * *  * ** * * * * * * *  * **  * * * ** ** *  *  ** * * *  *  \n    *  *  *** * * * * * ** *  *  * * * * *   * * * * ** * ** *  \n* ** * **   ***  * * * * * ** *  * * * ** **  ** * *  * * * ** *\n* *   *  **    *  *  *  * * * ** * ** * * * ** *  * ** *  *  * *\n* *   **  **** ** *** * * *  * * ** **  * *  *  * *  *  *  * *  \n **     *    ** *   ** ** ** * *  *  * * * * ** ** **** ** * ***\n   * **  ****  * *** ** *  * * ** ** * * ** * *  **   *  * *   *\n  * * *  *  **  * * * *  * ** * *   * * * * ****  *** ** * *** *\n *   * *  *  *  *  * *   ** *  * * * * *  *     *   **  **   * *\n ***** ** ** ** **** **** ******** *  ********* **** *** *******"
+
+
+
+            render = (arena, scale=10) ->
+                width = arena.indexOf('\n')
+                # arena.length = height * width + (height - 1)
+                height = (arena.length + 1) / (width + 1)
+                canvas = document.getElementById("game")
+                context = canvas.getContext("2d")
+
+                if height * scale == canvas.height and width * scale == canvas.width
+                    context.clearRect(0, 0, canvas.width, canvas.height)
+                else
+                    canvas.width = width * scale
+                    canvas.height = height * scale
+
+                x = 0
+                y = 0
+                context.fillStyle = "#000000"
+                for chr in arena
+                    switch chr
+                        when '*'
+                            x += 1
+                            context.fillRect(x * scale, y * scale, scale, scale)
+                        when ' '
+                            x += 1
+                        when '\n'
+                            y += 1
+                            x = 0
+            render(s)
+        </script>
+    </body>
+</html>
