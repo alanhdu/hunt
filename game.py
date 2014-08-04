@@ -2,7 +2,7 @@ import numpy as np
 
 class Maze(object):
     def __init__(self, w=64, h=48, density=0.5):
-        self.maze = np.random.rand(w, h) < density
+        self.maze = np.random.rand(h, w) < density
 
         for i in xrange(100):   # 100 interations of Rule 12345/3
             n = self._numNeighbors()
