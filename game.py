@@ -1,6 +1,6 @@
 import numpy as np
 
-class Maze(object):
+class Arena(object):
     def __init__(self, w=64, h=48, density=0.5):
         self.maze = np.random.rand(h, w) < density
 
@@ -12,7 +12,7 @@ class Maze(object):
         m = np.zeros( (x+2, y+2) )
         m[1:-1, 1:-1] = self.maze.astype(int)
         return (m[:-2,  :-2] + m[:-2, 1:-1] + m[:-2,  2:] + 
-                m[1:-1, :-2] + m[1:-1, :-2] + m[1:-1, 2:] +
+                m[1:-1, :-2] + m[1:-1,1:-1] + m[1:-1, 2:] +
                 m[2:,   :-2] + m[2:,  1:-1] + m[2:,  :-2])
 
     def __str__(self):

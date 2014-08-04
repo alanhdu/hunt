@@ -5,6 +5,7 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
         <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-2.1.1.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/socket.io-0.9.16.js') }}"></script>
 
         <script type="text/javascript" src="http://coffeescript.org/extras/coffee-script.js"> </script>
 
@@ -29,7 +30,6 @@
         </div>
 
         <script type="text/coffeescript">
-            s = "{{ arena | replace('\n', '\\n') }}"
 
             render = (arena, scale=10) ->
                 width = arena.indexOf('\n')
@@ -57,7 +57,10 @@
                         when '\n'
                             y += 1
                             x = 0
-            render(s)
+
+            socket = io.connect()
+            socket.on("connect", () -> socket.emit('begin', {width: 64, height: 48}))
+            socket.on("update", render)
         </script>
     </body>
 </html>
