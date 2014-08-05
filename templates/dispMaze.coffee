@@ -1,35 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-        <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-2.1.1.min.js') }}"></script>
-        <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-
-        <script type="text/javascript" src="http://coffeescript.org/extras/coffee-script.js"> </script>
-
-        <title> Hunt Online </title>
-    </head>
-
-    <body>
-        <div class="navbar navbar-default navbar-fixed-top" role="navigation"> 
-            <div class="navbar-header">
-                <a class="navbar-brand" href="#"> Hunt </a>
-            </div>
-
-            <div>
-                <ul class="nav navbar-nav">
-                    <li> <a href="#"> Play </a> </li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="content" style="text-align:center">
-	  <hr />
-          <canvas id="game" width="200" height="200"> </canvas>
-        </div>
-
-        <script type="text/coffeescript">
 s = "{{ arena | replace('\n', '\\n') }}"
 s = s + "\n"
 #s = "** * **\n** * **\n** * **\n** * **\n** * **\n"
@@ -102,6 +70,3 @@ draw = (x, y, width, height, type, context) ->
     context.fillRect x1, y1, w, h
 
 render(s)
-	</script>
-    </body>
-</html>

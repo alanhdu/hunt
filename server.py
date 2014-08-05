@@ -10,4 +10,5 @@ def index():
     return render_template("play.html", arena=str(m))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.debug = False
+    app.run(port = 8080)#, host='0.0.0.0')
