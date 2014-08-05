@@ -38,7 +38,7 @@ class Arena(object):
         return s
     def getMask(self, x, y):
         if self.maze[y, x] == '*':
-            raise ValueError("Position located at a Wall")
+            raise IndexError("Position located at a Wall")
         row = self.maze[y, :]
         col = self.maze[:, x]
 
@@ -73,15 +73,19 @@ class Player(object):
         self.facing = "<>v^"[np.random.randint(4)]
         self.view = np.ma.masked_array(arena.maze, arena.getMask(self.x, self.y))
     def move(self, direction):
-        if direction == "<":
-            self.x -= 1
-        elif direction == ">":
-            self.x += 1
-        elif direction == "^":
-            self.y -= 1
-        elif direction == "v":
-            self.y += 1
-        self.view.mask *= self.arena.getMask(self.x, self.y)
+        xs = {"<": -1, ">": 1, "^":  0, "v": 0}
+        ys = {"<":  0, ">": 0, "^": -1, "v": 1}
+        self.x += xs[direction]
+        self.y += ys[direction]
+
+        try:
+            mask = self.arena.getMask(self.x, self.y)
+            self.view.mask *= mask
+        except IndexError:  # TODO Use custom errors
+            print "Moving into a wall"
+            print self.x, self.y, xs[direction], ys[direction]
+            self.x -= xs[direction]
+            self.y -= ys[direction]
     def __str__(self):
         arena = self.view.filled(" ")
         arena[self.y, self.x] = self.facing

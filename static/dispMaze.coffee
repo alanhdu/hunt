@@ -10,20 +10,30 @@ render = (arena) ->
     y = 0
     map = ""
     for chr in arena
+        beginSpan = "<span id='" + x + "-" + y + "'>"
         switch chr
             when '*'
                 c = (getType x, y, width, arena)
-                map += "<span id=\"" + x + "-" + y + "\">" + c + "</span>"
-                x++
-            when ' '
-                map += "<span id=\"" + x + "-" + y + "\">&nbsp;</span>"
+                map += beginSpan + c + "</span>"
                 x++
             when '\n'
                 map += "<br />"
                 x=0
                 y++
+            when ' '
+                map += beginSpan + "&nbsp;" + "</span>"
+                x++
+            when '>'
+                map += beginSpan + "&gt;" + "</span>"
+                x++
+            when '<'
+                map += beginSpan + "&lt;" + "</span>"
+                x++
+            else
+                map += beginSpan + chr + "</span>"
 
     (document.getElementById "map").innerHTML = map
+
 
 getType = (x, y, width, arena) ->
     w = width + 1
@@ -36,6 +46,10 @@ getType = (x, y, width, arena) ->
         dash = true
     if arena[top] is '*' or arena[bot] is '*'
         pipe = true
+    if arena[top] isnt '*' and arena[bot] isnt '*' and
+       arena[left] isnt '*' and arena[right] isnt '*'
+        pipe = true
+        dash = true
     
     if pipe and dash
         return '+'

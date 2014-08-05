@@ -6,7 +6,7 @@ import game
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-m = game.Game(w=10,h=10)
+m = game.Game()
 
 @app.route("/")
 def index():
