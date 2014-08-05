@@ -1,32 +1,47 @@
-    s = "{{ arena | replace('\n', '\\n') }}"
+render = (arena) ->
+    arena += '\n'
+    width = arena.indexOf('\n')
+    # arena.length = height * width + (height - 1)
+    height = (arena.length + 1) / (width + 1)
 
-    render = (arena, scale=10) ->
-      width = arena.indexOf('\n')
-      # arena.length = height * width + (height - 1)
-      height = (arena.length + 1) / (width + 1)
-      canvas = document.getElementById("game")
-      context = canvas.getContext("2d")
-
-      if height * scale == canvas.height and width * scale == canvas.width
-        context.clearRect(0, 0, canvas.width, canvas.height)
-      else
-        canvas.width = width * scale
-        canvas.height = height * scale
-
-      x = 0
-      y = 0
-      context.fillStyle = "#000000"
-      for chr in arena
+    console.log arena
+    
+    x = 0
+    y = 0
+    map = ""
+    for chr in arena
         switch chr
-          when '*'
-            x += 1
-            context.fillRect(x * scale, y * scale, scale, scale)
-          when ' '
-            x += 1
-          when '\n'
-            y += 1
-            x = 0
+            when '*'
+                c = (getType x, y, width, arena)
+                map += "<span id=\"" + x + "-" + y + "\">" + c + "</span>"
+                x++
+            when ' '
+                map += "<span id=\"" + x + "-" + y + "\">&nbsp;</span>"
+                x++
+            when '\n'
+                map += "<br />"
+                x=0
+                y++
 
-      
-      
-    render(s)
+    (document.getElementById "map").innerHTML = map
+
+getType = (x, y, width, arena) ->
+    w = width + 1
+    pos = w * y + x
+    top = pos - w
+    bot = pos + w
+    left = pos - 1
+    right = pos + 1
+    if arena[left] is '*' or arena[right] is '*'
+        dash = true
+    if arena[top] is '*' or arena[bot] is '*'
+        pipe = true
+    
+    if pipe and dash
+        return '+'
+    else if pipe
+        return '|'
+    else if dash
+        return '-'
+    else
+        return ' '
