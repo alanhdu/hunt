@@ -14,20 +14,24 @@ def index():
 
 @socketio.on("begin")
 def blah(msg):
-    user = msg["username"]
-
-    m.addPlayer(user)
-    print str(m.players[user])
-    emit("update", str(m.players[user]))
+    m.addPlayer(msg["username"])
+    player = m.players[msg["username"]]
+    emit("update", str(player))
 
 @socketio.on("move")
 def move(msg):
     direction = msg["direction"]
     user = msg["username"]
 
-    print direction
     m.players[user].move(direction)
-    print str(m.players[user])
+    emit("update", str(m.players[user]))
+
+@socketio.on("turn")
+def turn(msg):
+    direction = msg["direction"]
+    user = msg["username"]
+
+    m.players[user].turn(direction)
     emit("update", str(m.players[user]))
 
 if __name__ == "__main__":

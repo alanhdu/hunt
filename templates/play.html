@@ -40,11 +40,16 @@
                 key = evt.which
                 chr = String.fromCharCode key
 
+                evt.preventDefault()
+                if evt.ctrlKey
+                    type = "turn"
+                else
+                    type = "move"
                 switch chr
-                    when 'J' then socket.emit("move", {direction: 'v', username: "test"})
-                    when 'K' then socket.emit("move", {direction: '^', username: "test"})
-                    when 'L' then socket.emit("move", {direction: '>', username: "test"})
-                    when 'H' then socket.emit("move", {direction: '<', username: "test"})
+                    when 'J' then socket.emit(type, {direction: 'v', username: "test"})
+                    when 'K' then socket.emit(type, {direction: '^', username: "test"})
+                    when 'L' then socket.emit(type, {direction: '>', username: "test"})
+                    when 'H' then socket.emit(type, {direction: '<', username: "test"})
         </script>
 
     </body>

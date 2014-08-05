@@ -1,12 +1,11 @@
 import numpy as np
 
 def numNeighbors(grid):
-    x, y = grid.shape
-    m = np.zeros( (x+2, y+2) )  # add edges
-    m[1:-1, 1:-1] = grid.astype(int)
-    return (m[:-2,  :-2] + m[:-2, 1:-1] + m[:-2,  2:] + 
-            m[1:-1, :-2] + m[1:-1,1:-1] + m[1:-1, 2:] +
-            m[2:,   :-2] + m[2:,  1:-1] + m[2:,   2:])
+    m = grid.astype(int)
+    m[1:-1, 1:-1] = (m[:-2,  :-2] + m[:-2, 1:-1] + m[:-2,  2:] +
+                     m[1:-1, :-2] + m[1:-1,1:-1] + m[1:-1, 2:] +
+                     m[2:,   :-2] + m[2:,  1:-1] + m[2:,   2:])
+    return m
 
 def rule12345_3(grid):
     n = numNeighbors(grid)
@@ -23,7 +22,8 @@ class Game(object):
 
 class Arena(object):
     def __init__(self, w=64, h=48, density=0.5):
-        start = np.random.rand(h, w) > density
+        start = -np.zeros( (h+2, w+2), dtype=bool)
+        start[1:-1, 1:-1] = np.random.rand(h, w) > density
 
         for i in xrange(100):   # 100 interations of Rule 12345/3
             n = numNeighbors(start)
@@ -72,6 +72,12 @@ class Player(object):
 
         self.facing = "<>v^"[np.random.randint(4)]
         self.view = np.ma.masked_array(arena.maze, arena.getMask(self.x, self.y))
+
+        # Ensure edges are visible
+        self.view.mask[0,  :].fill(False)
+        self.view.mask[-1, :].fill(False)
+        self.view.mask[:,  0].fill(False)
+        self.view.mask[:, -1].fill(False)
     def move(self, direction):
         xs = {"<": -1, ">": 1, "^":  0, "v": 0}
         ys = {"<":  0, ">": 0, "^": -1, "v": 1}
@@ -82,10 +88,11 @@ class Player(object):
             mask = self.arena.getMask(self.x, self.y)
             self.view.mask *= mask
         except IndexError:  # TODO Use custom errors
-            print "Moving into a wall"
-            print self.x, self.y, xs[direction], ys[direction]
             self.x -= xs[direction]
             self.y -= ys[direction]
+    def turn(self, direction):
+        self.facing = direction
+
     def __str__(self):
         arena = self.view.filled(" ")
         arena[self.y, self.x] = self.facing

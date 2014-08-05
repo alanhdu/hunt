@@ -1,4 +1,4 @@
-render = (arena) ->
+@render = (arena) ->
     arena += '\n'
     width = arena.indexOf('\n')
     # arena.length = height * width + (height - 1)
@@ -6,29 +6,23 @@ render = (arena) ->
 
     console.log arena
     
-    x = 0
-    y = 0
     map = ""
-    for chr in arena
+    for chr, i in arena
+        x = i % (width + 1)
+        y = Math.floor(i / (width + 1))
         beginSpan = "<span id='" + x + "-" + y + "'>"
         switch chr
             when '*'
                 c = (getType x, y, width, arena)
                 map += beginSpan + c + "</span>"
-                x++
             when '\n'
                 map += "<br />"
-                x=0
-                y++
             when ' '
                 map += beginSpan + "&nbsp;" + "</span>"
-                x++
             when '>'
                 map += beginSpan + "&gt;" + "</span>"
-                x++
             when '<'
                 map += beginSpan + "&lt;" + "</span>"
-                x++
             else
                 map += beginSpan + chr + "</span>"
 
