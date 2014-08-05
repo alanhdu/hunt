@@ -1,5 +1,4 @@
-data/*
-.spyder*
+*~
 *.swp
 
 *.py[cod]

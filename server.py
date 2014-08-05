@@ -16,6 +16,5 @@ def blah(msg):
     m = game.Arena(w=msg["width"], h=msg["height"])
     emit("update", str(m))
 
-
 if __name__ == "__main__":
-    socketio.run(app)
+    socketio.run(app, port=8080)
