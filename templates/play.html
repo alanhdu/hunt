@@ -30,6 +30,21 @@
           <canvas id="game" width="200" height="200"> </canvas>
         </div>
 
-        <script src="{{ url_for('static', filename='dispMaze.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='dispMaze.js') }}"></script>
+        <script type="text/coffeescript">
+            socket = io.connect()
+            # TODO add actual usernames/ids
+            socket.on("connect", () -> socket.emit('begin', {width:64, height:48, username:"test"}))
+            socket.on("update", render)
+            $(document).keydown (evt) ->
+                key = evt.which
+                chr = String.fromCharCode key
+
+                switch chr
+                    when 'J' then socket.emit("move", {direction: 'v', username: "test"})
+                    when 'K' then socket.emit("move", {direction: '^', username: "test"})
+                    when 'L' then socket.emit("move", {direction: '>', username: "test"})
+                    when 'H' then socket.emit("move", {direction: '<', username: "test"})
+        </script>
     </body>
 </html>

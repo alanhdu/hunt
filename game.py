@@ -65,14 +65,26 @@ class Arena(object):
 class Player(object):
     def __init__(self, arena):
         h, w = arena.maze.shape
-        x, y = np.random.randint(w), np.random.randint(h)
-        while arena.maze[y, x] == "*":
-            x, y = np.random.randint(w), np.random.randint(h)
-        self.view = arena.getMask(x, y)
+        self.x, self.y = np.random.randint(w), np.random.randint(h)
+        while arena.maze[self.y, self.x] == "*":
+            self.x, self.y = np.random.randint(w), np.random.randint(h)
+        self.arena = arena
 
-        self.direction = "<>v^"[np.random.randint(4)]
-        self.view = np.ma.masked_array(arena.maze, self.view)
+        self.facing = "<>v^"[np.random.randint(4)]
+        self.view = np.ma.masked_array(arena.maze, arena.getMask(self.x, self.y))
+    def move(self, direction):
+        if direction == "<":
+            self.x -= 1
+        elif direction == ">":
+            self.x += 1
+        elif direction == "^":
+            self.y -= 1
+        elif direction == "v":
+            self.y += 1
+        self.view.mask *= self.arena.getMask(self.x, self.y)
     def __str__(self):
+        arena = self.view.filled(" ")
+        arena[self.y, self.x] = self.facing
         s = "\n".join("".join(x for x in y)
-                      for y in self.view.filled(" "))
+                      for y in arena)
         return s

@@ -6,15 +6,29 @@ import game
 app = Flask(__name__)
 socketio = SocketIO(app)
 
+m = game.Game(w=10,h=10)
+
 @app.route("/")
 def index():
     return render_template("play.html")
 
 @socketio.on("begin")
 def blah(msg):
-    print "Connection"
-    m = game.Arena(w=msg["width"], h=msg["height"])
-    emit("update", str(m))
+    user = msg["username"]
+
+    m.addPlayer(user)
+    print str(m.players[user])
+    emit("update", str(m.players[user]))
+
+@socketio.on("move")
+def move(msg):
+    direction = msg["direction"]
+    user = msg["username"]
+
+    print direction
+    m.players[user].move(direction)
+    print str(m.players[user])
+    emit("update", str(m.players[user]))
 
 if __name__ == "__main__":
     socketio.run(app, port=8080)
