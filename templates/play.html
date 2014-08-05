@@ -8,20 +8,6 @@
         <script type="text/javascript" src="{{ url_for('static', filename='js/socket.io-0.9.16.js') }}"></script>
 
 	<script src="{{ url_for('static', filename='dispMaze.js') }}"></script>
-	<script>
-	  var socket;
-	  socket = io.connect();
-	  
-	  socket.on("connect", function() {
-	  return socket.emit('begin', {
-	  width: 64,
-	  height: 48,
-	  username: "test"
-	  });
-	  });
-
-	  socket.on("update", render);
-	</script>
 
         <title> Hunt Online </title>
     </head>
@@ -42,8 +28,24 @@
         <div class="content" style="text-align:center;padding-top: 50px;">
 	  <hr />
 	  <div id="map" style="font-family: monospace; line-height:14px;">
-
 	  </div>
         </div>
+
+        <script type="text/coffeescript">
+            socket = io.connect()
+            # TODO add actual usernames/ids
+            socket.on("connect", () -> socket.emit('begin', {width:64, height:48, username:"test"}))
+            socket.on("update", render)
+            $(document).keydown (evt) ->
+                key = evt.which
+                chr = String.fromCharCode key
+
+                switch chr
+                    when 'J' then socket.emit("move", {direction: 'v', username: "test"})
+                    when 'K' then socket.emit("move", {direction: '^', username: "test"})
+                    when 'L' then socket.emit("move", {direction: '>', username: "test"})
+                    when 'H' then socket.emit("move", {direction: '<', username: "test"})
+        </script>
+
     </body>
 </html>
