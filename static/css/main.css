@@ -1,0 +1,14 @@
+body {
+    background-color: #000000;
+    font-family: monospace;
+    color: #FFFFFF;
+    text-align:center;
+}
+
+.content {
+    padding-top: 60px;
+}
+
+#map {
+    line-height: 14px;
+}

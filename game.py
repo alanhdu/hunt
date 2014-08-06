@@ -12,7 +12,7 @@ def rule12345_3(grid):
     return (n == 3) + ( (0 < n) * (n < 6) * grid)
 
 class Game(object):
-    def __init__(self, w=64, h=48):
+    def __init__(self, w=51, h=23):
         self.arena = Arena(w, h)
         self.players = {} 
     def addPlayer(self, username):
@@ -21,7 +21,7 @@ class Game(object):
         self.players[username] = Player(self.arena)
 
 class Arena(object):
-    def __init__(self, w=64, h=48, density=0.5):
+    def __init__(self, w=51, h=23, density=0.5):
         start = -np.zeros( (h+2, w+2), dtype=bool)
         start[1:-1, 1:-1] = np.random.rand(h, w) > density
 
