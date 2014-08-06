@@ -3,36 +3,34 @@
   var getType;
 
   this.render = function(arena) {
-    var beginSpan, c, chr, height, i, map, width, x, y, _i, _len;
+    var c, chr, height, i, map, width, x, y, _i, _len;
     arena += '\n';
     width = arena.indexOf('\n');
     height = (arena.length + 1) / (width + 1);
-    console.log(arena);
     map = "";
     for (i = _i = 0, _len = arena.length; _i < _len; i = ++_i) {
       chr = arena[i];
       x = i % (width + 1);
       y = Math.floor(i / (width + 1));
-      beginSpan = "<span id='" + x + "-" + y + "'>";
       switch (chr) {
         case '*':
           c = getType(x, y, width, arena);
-          map += beginSpan + c + "</span>";
+          map += c;
           break;
         case '\n':
           map += "<br />";
           break;
         case ' ':
-          map += beginSpan + "&nbsp;" + "</span>";
+          map += "&nbsp;";
           break;
         case '>':
-          map += beginSpan + "&gt;" + "</span>";
+          map += "&gt;";
           break;
         case '<':
-          map += beginSpan + "&lt;" + "</span>";
+          map += "&lt;";
           break;
         default:
-          map += beginSpan + chr + "</span>";
+          map += chr;
       }
     }
     return (document.getElementById("map")).innerHTML = map;

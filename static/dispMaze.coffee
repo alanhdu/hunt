@@ -3,28 +3,25 @@
     width = arena.indexOf('\n')
     # arena.length = height * width + (height - 1)
     height = (arena.length + 1) / (width + 1)
-
-    console.log arena
     
     map = ""
     for chr, i in arena
         x = i % (width + 1)
         y = Math.floor(i / (width + 1))
-        beginSpan = "<span id='" + x + "-" + y + "'>"
         switch chr
             when '*'
                 c = (getType x, y, width, arena)
-                map += beginSpan + c + "</span>"
+                map += c
             when '\n'
                 map += "<br />"
             when ' '
-                map += beginSpan + "&nbsp;" + "</span>"
+                map += "&nbsp;"
             when '>'
-                map += beginSpan + "&gt;" + "</span>"
+                map += "&gt;"
             when '<'
-                map += beginSpan + "&lt;" + "</span>"
+                map += "&lt;"
             else
-                map += beginSpan + chr + "</span>"
+                map += chr
 
     (document.getElementById "map").innerHTML = map
 

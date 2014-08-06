@@ -36,6 +36,7 @@
             # TODO add actual usernames/ids
             socket.on("connect", () -> socket.emit('begin', {width:64, height:48, username:"test"}))
             socket.on("update", render)
+
             $(document).keydown (evt) ->
                 key = evt.which
                 chr = String.fromCharCode key
@@ -45,6 +46,7 @@
                     type = "turn"
                 else
                     type = "move"
+
                 switch chr
                     when 'J' then socket.emit(type, {direction: 'v', username: "test"})
                     when 'K' then socket.emit(type, {direction: '^', username: "test"})
