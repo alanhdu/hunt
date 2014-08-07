@@ -6,7 +6,7 @@ import game
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-m = game.Game()
+m = game.Game(debug=True)
 
 @app.route("/")
 def index():
@@ -16,6 +16,7 @@ def index():
 def blah(msg):
     m.addPlayer(msg["username"])
     player = m.players[msg["username"]]
+    print str(m.arena)
     emit("update", str(player))
 
 @socketio.on("move")

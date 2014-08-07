@@ -12,8 +12,8 @@ def rule12345_3(grid):
     return (n == 3) + ( (0 < n) * (n < 6) * grid)
 
 class Game(object):
-    def __init__(self, w=51, h=23):
-        self.arena = Arena(w, h)
+    def __init__(self, w=51, h=23, debug=False):
+        self.arena = Arena(w, h, debug)
         self.players = {} 
     def addPlayer(self, username):
         if username in self.players:
@@ -21,7 +21,7 @@ class Game(object):
         self.players[username] = Player(self.arena)
 
 class Arena(object):
-    def __init__(self, w=51, h=23, density=0.5):
+    def __init__(self, w=51, h=23, density=0.5, debug=False):
         start = -np.zeros( (h+2, w+2), dtype=bool)
         start[1:-1, 1:-1] = np.random.rand(h, w) > density
 
@@ -29,6 +29,37 @@ class Arena(object):
             n = numNeighbors(start)
             start = (n == 3) + ( (n > 0) * (n < 6) * start)
         self._translate(start)
+
+
+        if debug:
+            self.start = """\
+*****************************************************
+*                               *                   *
+* ******** ***********************  *******  ** *** *
+*                   *            ****     **  * *   *
+*     ************* * *** ******      ***     * *** *
+*     *   *       * * * * *     ******     **     * *
+*   * * * *   * * * * *      ***      ***   ***     *
+*                 *   ********        *         *** *
+* * * * * *   * * **  *        *            *** *   *
+* * * * * ***** **  * * ****** *     **** * *   *** *
+* * *   * *    * * ** *        *   *    * * *****   *
+* * ** **  *** * *  * * ***** **   **** * * *       *
+* *      **    * ** * * *             * * **  ****  *
+* * ***** * ** *    * ******   *    *       ***   * *
+* * *     * *     **** * * * * * *  ********      * *
+* * *  ** * *****    * * * * * * ****       ***  ** *
+* *     * * *     **** * *   * *     ****** *       *
+* *   * * * ****       * **** * *****     * * *     *
+* * * * * *  * **** ** * *    * *   * ***** * * *** *
+* * * * *    *         * * ** * * * * *     * *     *
+* * * * **************** *  * * * * * ************* *
+* *   * *                **   * * * *               *
+* ***** ******** ********* ****** ***************** *
+*                                                   *
+*****************************************************
+"""
+
     def _translate(self, grid):
         self.maze = np.array([["*" if x else " " for x in y]
                               for y in grid ])
@@ -81,21 +112,25 @@ class Player(object):
     def move(self, direction):
         xs = {"<": -1, ">": 1, "^":  0, "v": 0}
         ys = {"<":  0, ">": 0, "^": -1, "v": 1}
+
+        self.arena[self.y, self.x] = ' '
+
         self.x += xs[direction]
         self.y += ys[direction]
 
-        try:
+        if self.arena[self.y, self.x] == " ":
             mask = self.arena.getMask(self.x, self.y)
             self.view.mask *= mask
-        except IndexError:  # TODO Use custom errors
+        else:   # running into something
             self.x -= xs[direction]
             self.y -= ys[direction]
+        self.arena[self.y, self.x] = self.facing
+
     def turn(self, direction):
         self.facing = direction
 
     def __str__(self):
         arena = self.view.filled(" ")
-        arena[self.y, self.x] = self.facing
         s = "\n".join("".join(x for x in y)
                       for y in arena)
         return s
