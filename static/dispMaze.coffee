@@ -6,12 +6,12 @@
     
     map = ""
     for chr, i in arena
-        x = i % (width + 1)
-        y = Math.floor(i / (width + 1))
+        #x = i % (width + 1)
+        #y = Math.floor(i / (width + 1))
         switch chr
-            when '*'
-                c = (getType x, y, width, arena)
-                map += c
+            #when '*'
+                #c = (getType x, y, width, arena)
+                #map += c
             when '\n'
                 map += "<br />"
             when ' '

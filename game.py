@@ -33,9 +33,40 @@ class Arena(object):
         self.maze = np.array([["*" if x else " " for x in y]
                               for y in grid ])
     def __str__(self):
-        s = "\n".join("".join(x for x in y)
-                      for y in self.maze)
+        s = "\n".join("".join(self.getType(x, y) for x in range(len(self.maze[y])))
+                      for y in range(len(self.maze)))
         return s
+    def getType(self, x, y):
+        if not self.isStar(x, y):
+            return self.maze[y][x]
+        top   = self.isStar(x  , y-1)
+        bot   = self.isStar(x  , y+1)
+        left  = self.isStar(x-1, y)
+        right = self.isStar(x+1, y)
+
+        dash = False
+        pipe = False
+        if left or right:
+            dash = True
+        if top or bot:
+            pipe = True
+
+        if dash and pipe:
+            return "+"
+        elif dash:
+            return "-"
+        elif pipe:
+            return "|"
+        else:
+            return "+"
+
+    def isStar(self, x, y):
+        try:
+            c = self.maze[y][x]
+        except IndexError:
+            return False
+        return c == "*"
+
     def getMask(self, x, y):
         if self.maze[y, x] == '*':
             raise IndexError("Position located at a Wall")
@@ -96,6 +127,8 @@ class Player(object):
     def __str__(self):
         arena = self.view.filled(" ")
         arena[self.y, self.x] = self.facing
-        s = "\n".join("".join(x for x in y)
-                      for y in arena)
+        s = "\n".join("".join(self.getType(x, y) for x in range(len(arena[y])))
+                      for y in range(len(arena)))
+#        s = "\n".join("".join(x for x in y)
+#                      for y in arena)
         return s
