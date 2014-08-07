@@ -16,7 +16,6 @@ def index():
 def blah(msg):
     m.addPlayer(msg["username"])
     player = m.players[msg["username"]]
-    print str(m.arena)
     emit("update", str(player))
 
 @socketio.on("move")
@@ -36,4 +35,5 @@ def turn(msg):
     emit("update", str(m.players[user]))
 
 if __name__ == "__main__":
-    socketio.run(app, port=8080, host='0.0.0.0')
+    app.debug = True
+    socketio.run(app, port=8080)#, host='0.0.0.0')
