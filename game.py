@@ -156,8 +156,6 @@ class Player(object):
             mask = self.arena.getMask(self.x, self.y)
             self.view.mask *= mask
         else:   # running into something
-            print self.x
-            print self.y
             self.x -= xs[direction]
             self.y -= ys[direction]
 

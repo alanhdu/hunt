@@ -1,5 +1,4 @@
 @render = (arena) ->
-    console.log(arena)
     map = ""
     for chr, i in arena
         switch chr

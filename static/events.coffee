@@ -1,11 +1,15 @@
 socket = io.connect()
-# TODO add actual usernames/ids
-#socket.on("connect", () -> socket.emit('begin', {width:64, height:48, username:"test"}))
+
 socket.on("update", render)
+
+requestUpdate = () ->
+    socket.emit("get update", {username:window.username})
 
 $( "#play" ).on "click", (() ->
     window.username = $( "#username" ).val()
     socket.emit('begin', {width:51, height:23, username:username})
+
+    setInterval (() -> requestUpdate()), 150
 )
 
 $( window ).keydown ((evt) ->

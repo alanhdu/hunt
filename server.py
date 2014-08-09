@@ -13,10 +13,10 @@ def index():
     return render_template("play.html")
 
 @socketio.on("begin")
-def blah(msg):
+def begin(msg):
     m.addPlayer(msg["username"])
     player = m.players[msg["username"]]
-    emit("update", str(player))
+#    emit("update", str(player))
 
 @socketio.on("move")
 def move(msg):
@@ -24,7 +24,7 @@ def move(msg):
     user = msg["username"]
 
     m.players[user].move(direction)
-    emit("update", str(m.players[user]))
+#    emit("update", str(m.players[user]))
 
 @socketio.on("turn")
 def turn(msg):
@@ -32,8 +32,13 @@ def turn(msg):
     user = msg["username"]
 
     m.players[user].turn(direction)
+#    emit("update", str(m.players[user]))
+
+@socketio.on("get update")
+def updateMap(msg):
+    user = msg["username"]
     emit("update", str(m.players[user]))
 
 if __name__ == "__main__":
     app.debug = True
-    socketio.run(app, port=8080, host='0.0.0.0')
+    socketio.run(app, port=8080)#, host='0.0.0.0')
