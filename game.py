@@ -59,7 +59,6 @@ class Arena(object):
 *                                                   *
 *****************************************************"""
             self.maze = np.array([ list(line) for line in self.maze.split("\n")])
-            print self.maze
     def _translate(self, grid):
         self.maze = np.array([["*" if x else " " for x in y]
                               for y in grid ])
@@ -92,6 +91,8 @@ class Arena(object):
             return "+"
 
     def isStar(self, x, y):
+        if (x < 0 or y < 0):
+            return False
         try:
             c = self.maze[y, x]
         except IndexError:
@@ -155,6 +156,8 @@ class Player(object):
             mask = self.arena.getMask(self.x, self.y)
             self.view.mask *= mask
         else:   # running into something
+            print self.x
+            print self.y
             self.x -= xs[direction]
             self.y -= ys[direction]
 
