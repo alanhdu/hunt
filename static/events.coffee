@@ -15,7 +15,6 @@ $( window ).keydown ((evt) ->
     key = evt.which
     chr = String.fromCharCode key
 
-    evt.preventDefault()
     if evt.shiftKey
         type = "turn"
     else
@@ -26,7 +25,9 @@ $( window ).keydown ((evt) ->
         when 'K' then direction = '^'
         when 'L' then direction = '>'
         when 'H' then direction = '<'
+        else return true
 
+    evt.preventDefault()
     if direction isnt undefined
         username = window.username
         socket.emit(type, {direction: direction, username: username})

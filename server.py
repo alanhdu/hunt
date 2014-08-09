@@ -36,4 +36,4 @@ def turn(msg):
 
 if __name__ == "__main__":
     app.debug = True
-    socketio.run(app, port=8080)#, host='0.0.0.0')
+    socketio.run(app, port=8080, host='0.0.0.0')

@@ -162,6 +162,7 @@ class Player(object):
 
     def turn(self, direction):
         self.facing = direction
+        self.arena.maze[self.y, self.x] = self.facing
 
     def __str__(self):
         h, w = self.view.shape
