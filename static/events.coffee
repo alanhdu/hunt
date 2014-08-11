@@ -2,6 +2,8 @@ socket = io.connect()
 
 socket.on("update", render)
 
+socket.on("error", (msg) -> alert(msg))
+
 requestUpdate = () ->
     socket.emit("get update", {username:window.username})
 
