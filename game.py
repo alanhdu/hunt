@@ -10,7 +10,7 @@ def numNeighbors(grid):
 
 def rule12345_3(grid):
     n = numNeighbors(grid)
-    return (n == 3) or ( (0 < n) and (n < 6) and grid)
+    return (n == 3) + ( (0 < n) * (n < 6) * grid)
 
 class Game(object):
     def __init__(self, w=51, h=23, debug=False):
@@ -25,12 +25,11 @@ class Arena(object):
     def __init__(self, w=51, h=23, density=0.5, debug=False):
         start = -np.zeros( (h, w), dtype=bool)
         start[1:-1, 1:-1] = np.random.rand(h-2, w-2) > density
+        self.shape = start.shape
 
         for i in xrange(100):   # 100 interations of Rule 12345/3
-            n = numNeighbors(start)
-            start = (n == 3) + ( (n > 0) * (n < 6) * start)
+            start = rule12345_3(start)
         self._translate(start)
-
 
         if debug:
             self.maze = """\
@@ -60,27 +59,27 @@ class Arena(object):
 *                                                   *
 *****************************************************"""
             self.maze = np.array([ list(line) for line in self.maze.split("\n")])
+    def __getitem__(self, *args, **kwargs):
+        return self.maze.__getitem__(*args, **kwargs)
     def _translate(self, grid):
         self.maze = np.array([["*" if x else " " for x in y]
                               for y in grid ])
     def __str__(self):
-        s = "\n".join("".join(self.getType(x, y) for x in range(len(self.maze[y])))
-                      for y in range(len(self.maze)))
-        return s
+        height, width = self.shape
+        return  "\n".join("".join(self.getType(x, y) 
+                                  for x in xrange(width))
+                          for y in xrange(height))
     def getType(self, x, y):
         if not self.isStar(x, y):
-            return self.maze[y, x]
-        top   = self.isStar(x  , y-1)
-        bot   = self.isStar(x  , y+1)
-        left  = self.isStar(x-1, y)
-        right = self.isStar(x+1, y)
+            return self[y, x]
 
-        dash = False
-        pipe = False
-        if left or right:
-            dash = True
-        if top or bot:
-            pipe = True
+        top    = self.isStar(x, y - 1)
+        bottom = self.isStar(x, y + 1)
+        left   = self.isStar(x - 1, y)
+        right  = self.isStar(x + 1, y)
+
+        dash = left or right
+        pipe = top or bottom
 
         if dash and pipe:
             return "+"
@@ -100,7 +99,7 @@ class Arena(object):
             return False
         return c == "*"
 
-    def getMask(self, x, y):
+    def getMask(self, x, y, facing):
         if self.maze[y, x] == '*':
             raise IndexError("Position located at a Wall")
         row = self.maze[y, :]
@@ -108,15 +107,18 @@ class Arena(object):
 
         view = np.zeros(self.maze.shape, dtype=bool)
 
-        view[:y,   x] = ((col[:y][::-1]   == "*").cumsum() == 0)[::-1]
-        view[y+1:, x] = ((col[y+1:] == "*").cumsum() == 0)
+        if facing != "v":
+            view[:y, x] = ((col[y - 1::-1] == "*").cumsum() == 0)[::-1]
+        if facing != "^":
+            view[y+1:, x] = ((col[y + 1:] == "*").cumsum() == 0)
+        if facing != ">":
+            view[y, :x] = ((row[x - 1::-1] == "*").cumsum() == 0)[::-1]
+        if facing != "<":
+            view[y, x+1:] = ((row[x + 1:] == "*").cumsum() == 0)
 
-        view[y, :x]   = ((row[:x][::-1]   == "*").cumsum() == 0)[::-1]
-        view[y, x+1:] = ((row[x+1:] == "*").cumsum() == 0)
+        view[y, x] = True
 
-        view[y, x] = False
-
-        # Expand all easks so you can see the walls
+        # Expand all masks so you can see the walls
         # TODO Make expansion work with edges
 
         view[1:-1, 1:-1] = (view[:-2,  :-2] + view[:-2, 1:-1] + view[:-2,  2:] +
@@ -137,13 +139,13 @@ class Player(object):
         arena.maze[self.y, self.x] = self.facing
         self.arena = arena
 
-        self.view = np.ma.masked_array(arena.maze, arena.getMask(self.x, self.y))
+        mask = arena.getMask(self.x, self.y, self.facing)
+        mask[0, :].fill(False)      # ensure edges are visible
+        mask[-1, :].fill(False)
+        mask[:, 0].fill(False)
+        mask[:, -1].fill(False)
+        self.view = np.ma.masked_array(arena.maze, mask)
 
-        # Ensure edges are visible
-        self.view.mask[0,  :].fill(False)
-        self.view.mask[-1, :].fill(False)
-        self.view.mask[:,  0].fill(False)
-        self.view.mask[:, -1].fill(False)
     def move(self, direction):
         xs = {"<": -1, ">": 1, "^":  0, "v": 0}
         ys = {"<":  0, ">": 0, "^": -1, "v": 1}
@@ -154,7 +156,7 @@ class Player(object):
         self.y += ys[direction]
 
         if self.arena.maze[self.y, self.x] == " ":
-            mask = self.arena.getMask(self.x, self.y)
+            mask = self.arena.getMask(self.x, self.y, self.facing)
             self.view.mask *= mask
         else:   # running into something
             self.x -= xs[direction]
@@ -164,6 +166,8 @@ class Player(object):
 
     def turn(self, direction):
         self.facing = direction
+        mask = self.arena.getMask(self.x, self.y, self.facing)
+        self.view.mask *= mask
         self.arena.maze[self.y, self.x] = self.facing
 
     def __str__(self):
@@ -174,4 +178,3 @@ class Player(object):
                               for x in xrange(w))
                       for y in xrange(h))
         return s
-

@@ -6,7 +6,13 @@ socket = io.connect();
 socket.on("frame", render);
 
 socket.on("error", (function(err) {
-  return window.alert(err);
+  return alert(err);
+}));
+
+socket.on("ack user", (function() {
+  return setInterval((function() {
+    return requestUpdate();
+  }), 150);
 }));
 
 requestUpdate = function() {
@@ -17,14 +23,11 @@ requestUpdate = function() {
 
 $("#play").on("click", (function() {
   window.username = $("#username").val();
-  socket.emit('begin', {
+  return socket.emit('begin', {
     width: 51,
     height: 23,
     username: username
   });
-  return setInterval((function() {
-    return requestUpdate();
-  }), 150);
 }));
 
 $(window).keydown((function(evt) {

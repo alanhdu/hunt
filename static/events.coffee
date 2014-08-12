@@ -1,7 +1,8 @@
 socket = io.connect()
 
 socket.on("frame", render)
-socket.on("error", ((err) -> window.alert(err)))
+socket.on("error", ((err) -> alert(err)))
+socket.on("ack user", (() -> setInterval (() -> requestUpdate()), 150))
 
 requestUpdate = () ->
     socket.emit("request frame", {username:window.username})
@@ -9,8 +10,6 @@ requestUpdate = () ->
 $( "#play" ).on "click", (() ->
     window.username = $( "#username" ).val()
     socket.emit('begin', {width:51, height:23, username:username})
-
-    setInterval (() -> requestUpdate()), 150
 )
 
 $( window ).keydown ((evt) ->
