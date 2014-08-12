@@ -14,9 +14,11 @@ def index():
 
 @socketio.on("begin")
 def begin(msg):
-    m.addPlayer(msg["username"])
-    player = m.players[msg["username"]]
-#    emit("update", str(player))
+    try:
+        m.addPlayer(msg["username"])
+        player = m.players[msg["username"]]
+    except ValueError:
+        emit("error", "name already taken")
 
 @socketio.on("move")
 def move(msg):
@@ -24,7 +26,6 @@ def move(msg):
     user = msg["username"]
 
     m.players[user].move(direction)
-#    emit("update", str(m.players[user]))
 
 @socketio.on("turn")
 def turn(msg):
@@ -32,12 +33,11 @@ def turn(msg):
     user = msg["username"]
 
     m.players[user].turn(direction)
-#    emit("update", str(m.players[user]))
 
-@socketio.on("get update")
+@socketio.on("request frame")
 def updateMap(msg):
     user = msg["username"]
-    emit("update", str(m.players[user]))
+    emit("frame", str(m.players[user]))
 
 if __name__ == "__main__":
     app.debug = True

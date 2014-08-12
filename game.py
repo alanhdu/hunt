@@ -4,12 +4,13 @@ def numNeighbors(grid):
     m = grid.astype(int)
     m[1:-1, 1:-1] = (m[:-2,  :-2] + m[:-2, 1:-1] + m[:-2,  2:] +
                      m[1:-1, :-2] + m[1:-1,1:-1] + m[1:-1, 2:] +
-                     m[2:,   :-2] + m[2:,  1:-1] + m[2:,   2:])
+                     m[2:,   :-2] + m[2:,  1:-1] + m[2:,   2:] -
+                     m[1:-1, 1:-1]) # stops a cell from counting itself as a neighbor
     return m
 
 def rule12345_3(grid):
     n = numNeighbors(grid)
-    return (n == 3) + ( (0 < n) * (n < 6) * grid)
+    return (n == 3) or ( (0 < n) and (n < 6) and grid)
 
 class Game(object):
     def __init__(self, w=51, h=23, debug=False):
@@ -22,8 +23,8 @@ class Game(object):
 
 class Arena(object):
     def __init__(self, w=51, h=23, density=0.5, debug=False):
-        start = -np.zeros( (h+2, w+2), dtype=bool)
-        start[1:-1, 1:-1] = np.random.rand(h, w) > density
+        start = -np.zeros( (h, w), dtype=bool)
+        start[1:-1, 1:-1] = np.random.rand(h-2, w-2) > density
 
         for i in xrange(100):   # 100 interations of Rule 12345/3
             n = numNeighbors(start)

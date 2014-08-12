@@ -3,10 +3,14 @@ var requestUpdate, socket;
 
 socket = io.connect();
 
-socket.on("update", render);
+socket.on("frame", render);
+
+socket.on("error", (function(err) {
+  return window.alert(err);
+}));
 
 requestUpdate = function() {
-  return socket.emit("get update", {
+  return socket.emit("request frame", {
     username: window.username
   });
 };

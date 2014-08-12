@@ -1,9 +1,10 @@
 socket = io.connect()
 
-socket.on("update", render)
+socket.on("frame", render)
+socket.on("error", ((err) -> window.alert(err)))
 
 requestUpdate = () ->
-    socket.emit("get update", {username:window.username})
+    socket.emit("request frame", {username:window.username})
 
 $( "#play" ).on "click", (() ->
     window.username = $( "#username" ).val()
