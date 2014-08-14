@@ -15,6 +15,7 @@ def index(interval=0.2):
     def run():
         while True:
             gevent.sleep(interval)
+            m.update()
             for username, player in m.players.viewitems():
                 socketio.emit("update", str(player), room=username)
     gevent.spawn(run)   # use separate thread
@@ -40,6 +41,10 @@ def turn(msg):
     user = msg["username"]
     m.players[user].turn(direction)
 
+@socketio.on("fire")
+def fire(msg):
+    user = msg["username"]
+    m.players[user].fire()
 if __name__ == "__main__":
     app.debug = True
     socketio.run(app, port=8080)

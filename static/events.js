@@ -12,14 +12,11 @@
 
   $("#play").on("click", (function() {
     window.username = $("#username").val();
-    socket.emit('begin', {
+    return socket.emit('begin', {
       width: 51,
       height: 23,
       username: username
     });
-    return setInterval((function() {
-      return requestUpdate();
-    }), 150);
   }));
 
   $(window).keydown((function(evt) {
@@ -43,7 +40,7 @@
         direction = '<';
         break;
       case 'F':
-        fire = True;
+        fire = true;
         break;
       default:
         return true;
@@ -56,12 +53,14 @@
       } else {
         type = "move";
       }
-      return socket.emit(type, {
+      socket.emit(type, {
         direction: direction,
         username: username
       });
-    } else if (fire) {
-      return socket.emit(fire, {
+    }
+    if (fire) {
+      console.log("Firing");
+      return socket.emit("fire", {
         username: username
       });
     }

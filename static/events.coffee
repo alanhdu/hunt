@@ -7,8 +7,6 @@ socket.on("error", (msg) -> alert(msg))
 $( "#play" ).on "click", (() ->
     window.username = $( "#username" ).val()
     socket.emit('begin', {width:51, height:23, username:username})
-
-    setInterval (() -> requestUpdate()), 150
 )
 
 $( window ).keydown ((evt) ->
@@ -18,14 +16,14 @@ $( window ).keydown ((evt) ->
     key = evt.which
     chr = String.fromCharCode key
 
-
     switch chr
         when 'J' then direction = 'v'
         when 'K' then direction = '^'
         when 'L' then direction = '>'
         when 'H' then direction = '<'
-        when 'F' then fire=True
-        else return true
+        when 'F' then fire = true
+        else
+            return true
 
     evt.preventDefault()
     username = window.username
@@ -36,6 +34,7 @@ $( window ).keydown ((evt) ->
         else
             type = "move"
         socket.emit(type, {direction: direction, username: username})
-    else if fire
-        socket.emit(fire, {username: username})
+    if fire
+        console.log("Firing")
+        socket.emit("fire", {username: username})
 )
