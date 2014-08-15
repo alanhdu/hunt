@@ -1,38 +1,20 @@
+from collections import namedtuple
+
 import numpy as np
 
 def numNeighbors(grid):
     m = grid.astype(int)
     m[1:-1, 1:-1] = (m[:-2,  :-2] + m[:-2, 1:-1] + m[:-2,  2:] +
-                     m[1:-1, :-2] + m[1:-1,1:-1] + m[1:-1, 2:] +
-                     m[2:,   :-2] + m[2:,  1:-1] + m[2:,   2:] -
-                     m[1:-1, 1:-1]) # stops a cell from counting itself as a neighbor
+                     m[1:-1, :-2] +                m[1:-1, 2:] +
+                     m[2:,   :-2] + m[2:,  1:-1] + m[2:,   2:])
     return m
 
 def rule12345_3(grid):
     n = numNeighbors(grid)
     return (n == 3) + ( (0 < n) * (n < 6) * grid)
 
-class Game(object):
-    def __init__(self, w=51, h=23, debug=False):
-        self.arena = Arena(w, h, debug=debug)
-        self.players = {} 
-    def addPlayer(self, username):
-        if username in self.players:
-            raise ValueError('Username already taken')
-        self.players[username] = Player(self.arena)
-
-class Arena(object):
-    def __init__(self, w=51, h=23, density=0.5, debug=False):
-        start = -np.zeros( (h, w), dtype=bool)
-        start[1:-1, 1:-1] = np.random.rand(h-2, w-2) > density
-        self.shape = start.shape
-
-        for i in xrange(100):   # 100 interations of Rule 12345/3
-            start = rule12345_3(start)
-        self._translate(start)
-
-        if debug:
-            self.maze = """\
+def debugMaze():
+    maze = """\
 *****************************************************
 *                                                   *
 *                        *                          *
@@ -58,20 +40,63 @@ class Arena(object):
 *                        *                          *
 *                                                   *
 *****************************************************"""
-            self.maze = np.array([ list(line) for line in self.maze.split("\n")])
-    def __getitem__(self, *args, **kwargs):
-        return self.maze.__getitem__(*args, **kwargs)
-    def _translate(self, grid):
-        self.maze = np.array([["*" if x else " " for x in y]
-                              for y in grid ])
+    return np.array([list(line) for line in maze.split("\n")])
+
+def move(p, direction):
+    if direction == "<":
+        return Point(x=p.x-1, y=p.y)
+    elif direction == ">":
+        return Point(x=p.x+1, y=p.y)
+    elif direction == "^":
+        return Point(x=p.x, y=p.y-1)
+    elif direction == "v":
+        return Point(x=p.x, y=p.y+1)
+
+# namedtuple is like a C struct. Only fields, no methods.
+Point = namedtuple("Point", ["y", "x"])
+Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
+
+class Game(object):
+    def __init__(self, w=51, h=23, debug=False):
+        self.players = {} 
+        self.bullets = []
+
+        start = -np.zeros((h+2, w+2), dtype=bool)
+        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.5
+        for i in xrange(100):   # 100 interations of Rule 12345/3
+            start = rule12345_3(start)
+        self.arena = np.array([["*" if x else " " for x in y]
+                               for y in start])
+        if debug:
+            self.arena = debugMaze()
+
+    def addPlayer(self, username):
+        if username in self.players:
+            raise ValueError('Username already taken')
+        self.players[username] = Player(self)
+    def update(self):
+        for bullet in self.bullets:
+            self.arena[bullet.pos] = " "
+
+        bullets = [Bullet(move(bullet.pos, bullet.direction), 
+                          bullet.direction, bullet.source)
+                   for bullet in self.bullets]
+        self.bullets = []
+        for bullet in bullets:
+            if self.arena[bullet.pos] == " ":
+                self.arena[bullet.pos] = ":"
+                self.bullets.append(bullet)
+            elif self.arena[bullet.pos] == "*":
+                self.arena[bullet.pos] = " "
+
     def __str__(self):
-        height, width = self.shape
+        height, width = self.arena.shape
         return  "\n".join("".join(self.getType(x, y) 
                                   for x in xrange(width))
                           for y in xrange(height))
     def getType(self, x, y):
         if not self.isStar(x, y):
-            return self[y, x]
+            return self.arena[y, x]
 
         top    = self.isStar(x, y - 1)
         bottom = self.isStar(x, y + 1)
@@ -94,85 +119,91 @@ class Arena(object):
         if (x < 0 or y < 0):
             return False
         try:
-            c = self.maze[y, x]
+            c = self.arena[y, x]
         except IndexError:
             return False
         return c == "*"
 
-    def getMask(self, x, y, facing):
-        if self.maze[y, x] == '*':
-            raise IndexError("Position located at a Wall")
-        row = self.maze[y, :]
-        col = self.maze[:, x]
-
-        view = np.zeros(self.maze.shape, dtype=bool)
-
-        if facing != "v":
-            view[:y, x] = ((col[y - 1::-1] == "*").cumsum() == 0)[::-1]
-        if facing != "^":
-            view[y+1:, x] = ((col[y + 1:] == "*").cumsum() == 0)
-        if facing != ">":
-            view[y, :x] = ((row[x - 1::-1] == "*").cumsum() == 0)[::-1]
-        if facing != "<":
-            view[y, x+1:] = ((row[x + 1:] == "*").cumsum() == 0)
-
-        view[y, x] = True
-
-        # Expand all masks so you can see the walls
-        # TODO Make expansion work with edges
-
-        view[1:-1, 1:-1] = (view[:-2,  :-2] + view[:-2, 1:-1] + view[:-2,  2:] +
-                            view[1:-1, :-2] + view[1:-1,1:-1] + view[1:-1, 2:] +
-                            view[2:,   :-2] + view[2:,  1:-1] + view[2:,   2:])
-
-        # Flip so True -> Masked & Invisible
-        return -view
 
 class Player(object):
-    def __init__(self, arena):
-        h, w = arena.maze.shape
-        self.x, self.y = np.random.randint(w), np.random.randint(h)
-        while arena.maze[self.y, self.x] == "*":
-            self.x, self.y = np.random.randint(w), np.random.randint(h)
+    def __init__(self, game):
+        h, w = game.arena.shape
+        x, y = np.random.randint(w), np.random.randint(h)
+        while game.arena[y, x] == "*":
+            x, y = np.random.randint(w), np.random.randint(h)
+        self.pos = Point(x=x, y=y)
         self.facing = "<>v^"[np.random.randint(4)]
 
-        arena.maze[self.y, self.x] = self.facing
-        self.arena = arena
+        self.game = game
+        game.arena[self.pos] = self.facing
 
-        mask = arena.getMask(self.x, self.y, self.facing)
+        mask = -np.zeros((h, w), dtype=bool)
         mask[0, :].fill(False)      # ensure edges are visible
         mask[-1, :].fill(False)
         mask[:, 0].fill(False)
         mask[:, -1].fill(False)
-        self.view = np.ma.masked_array(arena.maze, mask)
+
+        self.view = np.ma.masked_array(game.arena, mask)
+        self.updateMask()
 
     def move(self, direction):
-        xs = {"<": -1, ">": 1, "^":  0, "v": 0}
-        ys = {"<":  0, ">": 0, "^": -1, "v": 1}
+        self.game.arena[self.pos] = ' '
 
-        self.arena.maze[self.y, self.x] = ' '
+        p = move(self.pos, direction)
 
-        self.x += xs[direction]
-        self.y += ys[direction]
+        if self.game.arena[p] == " ":
+            self.pos = p
+            self.updateMask()
 
-        if self.arena.maze[self.y, self.x] == " ":
-            mask = self.arena.getMask(self.x, self.y, self.facing)
-            self.view.mask *= mask
-        else:   # running into something
-            self.x -= xs[direction]
-            self.y -= ys[direction]
+        self.game.arena[self.pos] = self.facing
 
-        self.arena.maze[self.y, self.x] = self.facing
+
+    def updateMask(self):
+        y, x = self.pos
+        if self.game.arena[self.pos] == "*":
+            raise IndexError("Position located at a Wall")
+        row = self.game.arena[y, :]
+        col = self.game.arena[:, x]
+
+        mask = np.zeros(self.game.arena.shape, dtype=bool)
+
+        if self.facing != "v":
+            mask[:y, x] = ((col[y - 1::-1] == "*").cumsum() == 0)[::-1]
+        if self.facing != "^":
+            mask[y+1:, x] = ((col[y + 1:] == "*").cumsum() == 0)
+        if self.facing != ">":
+            mask[y, :x] = ((row[x - 1::-1] == "*").cumsum() == 0)[::-1]
+        if self.facing != "<":
+            mask[y, x+1:] = ((row[x + 1:] == "*").cumsum() == 0)
+
+        mask[y, x] = True
+
+        # Expand all masks so you can see the walls
+        # TODO Make expansion work with edges
+
+        mask[1:-1, 1:-1] = (mask[:-2,  :-2] + mask[:-2, 1:-1] + mask[:-2,  2:] +
+                            mask[1:-1, :-2] + mask[1:-1,1:-1] + mask[1:-1, 2:] +
+                            mask[2:,   :-2] + mask[2:,  1:-1] + mask[2:,   2:])
+
+        # Flip so True -> Masked & Invisible
+        self.view.mask *= -mask
 
     def turn(self, direction):
         self.facing = direction
-        mask = self.arena.getMask(self.x, self.y, self.facing)
-        self.view.mask *= mask
-        self.arena.maze[self.y, self.x] = self.facing
+        self.updateMask()
+        self.game.arena[self.pos] = self.facing
+    def fire(self):
+        pos = move(self.pos, self.facing)
+        bullet = Bullet(pos, self.facing, self)
+        self.game.bullets.append(bullet)
+        print bullet.pos
+        print self.game.arena.shape
+        self.game.arena[bullet.pos] = ":"
+        print str(self.game)
 
     def __str__(self):
         h, w = self.view.shape
-        s = "\n".join("".join(  self.arena.getType(x, y) 
+        s = "\n".join("".join(  self.game.getType(x, y) 
                                 if not self.view.mask[y, x]
                                 else " "
                               for x in xrange(w))

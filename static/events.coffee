@@ -4,9 +4,6 @@ socket.on("frame", render)
 socket.on("error", ((err) -> alert(err)))
 socket.on("ack user", (() -> setInterval (() -> requestUpdate()), 150))
 
-requestUpdate = () ->
-    socket.emit("request frame", {username:window.username})
-
 $( "#play" ).on "click", (() ->
     window.username = $( "#username" ).val()
     socket.emit('begin', {width:51, height:23, username:username})
@@ -19,20 +16,25 @@ $( window ).keydown ((evt) ->
     key = evt.which
     chr = String.fromCharCode key
 
-    if evt.shiftKey
-        type = "turn"
-    else
-        type = "move"
-
     switch chr
         when 'J' then direction = 'v'
         when 'K' then direction = '^'
         when 'L' then direction = '>'
         when 'H' then direction = '<'
-        else return true
+        when 'F' then fire = true
+        else
+            return true
 
     evt.preventDefault()
+    username = window.username
+
     if direction isnt undefined
-        username = window.username
+        if evt.shiftKey
+            type = "turn"
+        else
+            type = "move"
         socket.emit(type, {direction: direction, username: username})
+    if fire
+        console.log("Firing")
+        socket.emit("fire", {username: username})
 )
