@@ -52,6 +52,7 @@ def move(p, direction):
     elif direction == "v":
         return Point(x=p.x, y=p.y+1)
 
+
 # namedtuple is like a C struct. Only fields, no methods.
 Point = namedtuple("Point", ["y", "x"])
 Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
@@ -80,7 +81,8 @@ class Game(object):
 
         bullets = [Bullet(move(bullet.pos, bullet.direction), 
                           bullet.direction, bullet.source)
-                   for bullet in self.bullets]
+                   for bullet in self.bullets
+                   if self.inArena(move(bullet.pos, bullet.direction))]
         self.bullets = []
         for bullet in bullets:
             if self.arena[bullet.pos] == " ":
@@ -89,11 +91,17 @@ class Game(object):
             elif self.arena[bullet.pos] == "*":
                 self.arena[bullet.pos] = " "
 
+        for player in self.players.itervalues():
+            player.updateMask()
+
     def __str__(self):
         height, width = self.arena.shape
         return  "\n".join("".join(self.getType(x, y) 
                                   for x in xrange(width))
                           for y in xrange(height))
+    def inArena(self, p):
+        # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
+        return all(0 < a < b - 1 for a, b in zip(p, self.arena.shape))
     def getType(self, x, y):
         if not self.isStar(x, y):
             return self.arena[y, x]
@@ -151,7 +159,7 @@ class Player(object):
 
         p = move(self.pos, direction)
 
-        if self.game.arena[p] == " ":
+        if self.game.inArena(p) and self.game.arena[p] == " ":
             self.pos = p
             self.updateMask()
 
@@ -194,12 +202,10 @@ class Player(object):
         self.game.arena[self.pos] = self.facing
     def fire(self):
         pos = move(self.pos, self.facing)
-        bullet = Bullet(pos, self.facing, self)
-        self.game.bullets.append(bullet)
-        print bullet.pos
-        print self.game.arena.shape
-        self.game.arena[bullet.pos] = ":"
-        print str(self.game)
+        if self.game.inArena(pos):
+            bullet = Bullet(pos, self.facing, self)
+            self.game.bullets.append(bullet)
+            self.game.arena[bullet.pos] = ":"
 
     def __str__(self):
         h, w = self.view.shape
