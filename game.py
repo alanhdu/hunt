@@ -64,7 +64,7 @@ class Game(object):
 
         start = -np.zeros((h+2, w+2), dtype=bool)
         start[1:-1, 1:-1] = np.random.rand(h, w) > 0.5
-        for i in xrange(100):   # 100 interations of Rule 12345/3
+        for i in xrange(250):
             start = rule12345_3(start)
         self.arena = np.array([["*" if x else " " for x in y]
                                for y in start])
@@ -204,8 +204,11 @@ class Player(object):
         pos = move(self.pos, self.facing)
         if self.game.inArena(pos):
             bullet = Bullet(pos, self.facing, self)
-            self.game.bullets.append(bullet)
-            self.game.arena[bullet.pos] = ":"
+            if self.game.arena[bullet.pos] == " ":
+                self.game.bullets.append(bullet)
+                self.game.arena[bullet.pos] = ":"
+            elif self.game.arena[bullet.pos] == "*":
+                self.game.arena[bullet.pos] = " "
 
     def __str__(self):
         h, w = self.view.shape
