@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import namedtuple, deque
 
 import numpy as np
 
@@ -52,10 +52,10 @@ def move(p, direction):
     elif direction == "v":
         return Point(x=p.x, y=p.y+1)
 
-
-# namedtuple is like a C struct. Only fields, no methods.
 Point = namedtuple("Point", ["y", "x"])
 Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
+
+speeds = {"bullet": 1, "move": 3}   # movement is 5 times slower than bullets
 
 class Game(object):
     def __init__(self, w=51, h=23, debug=False):
@@ -92,7 +92,7 @@ class Game(object):
                 self.arena[bullet.pos] = " "
 
         for player in self.players.itervalues():
-            player.updateMask()
+            player.update()
 
     def __str__(self):
         height, width = self.arena.shape
@@ -154,17 +154,8 @@ class Player(object):
         self.view = np.ma.masked_array(game.arena, mask)
         self.updateMask()
 
-    def move(self, direction):
-        self.game.arena[self.pos] = ' '
-
-        p = move(self.pos, direction)
-
-        if self.game.inArena(p) and self.game.arena[p] == " ":
-            self.pos = p
-            self.updateMask()
-
-        self.game.arena[self.pos] = self.facing
-
+        self.actions = deque()
+        self.lastActionTime = 0
 
     def updateMask(self):
         y, x = self.pos
@@ -196,10 +187,45 @@ class Player(object):
         # Flip so True -> Masked & Invisible
         self.view.mask *= -mask
 
+    def queue(self, action, *args, **kwargs):
+        if len(self.actions) > 5:       # only queue 5 actions at a time
+            self.actions.popleft()
+        self.actions.append((action, args, kwargs))
+
+    def update(self):
+        if self.actions:
+            func, args, kwargs = self.actions.popleft()
+            if func == "move" and self.lastActionTime == speeds["move"]:
+                self.move(*args, **kwargs)
+                self.lastActionTime = 0
+            elif func == "move":
+                self.lastActionTime += 1
+                self.actions.appendleft( (func, args, kwargs) )
+            elif func == "turn":
+                self.turn(*args, **kwargs)
+                self.lastActionTime = 0
+            elif func == "fire":
+                self.fire(*args, **kwargs)
+                self.lastActionTime = 0
+        else:
+            self.lastActionTime = 0
+
+        self.updateMask()
+
+    def move(self, direction):
+        self.game.arena[self.pos] = ' '
+        p = move(self.pos, direction)
+
+        if self.game.inArena(p) and self.game.arena[p] == " ":
+            self.pos = p
+            self.updateMask()
+        self.game.arena[self.pos] = self.facing
+
     def turn(self, direction):
         self.facing = direction
         self.updateMask()
         self.game.arena[self.pos] = self.facing
+
     def fire(self):
         pos = move(self.pos, self.facing)
         if self.game.inArena(pos):

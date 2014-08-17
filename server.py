@@ -16,7 +16,7 @@ def onError(self, t, value, trace):
     emit("error", message)
 
 @app.route("/")
-def index(interval=0.2):
+def index(interval=0.05):
     @copy_current_request_context
     def run():
         while True:
@@ -43,18 +43,18 @@ def move(msg):
     direction = msg["direction"]
     user = msg["username"]
 
-    m.players[user].move(direction)
+    m.players[user].queue("move", direction)
 
 @socketio.on("turn")
 def turn(msg):
     direction = msg["direction"]
     user = msg["username"]
-    m.players[user].turn(direction)
+    m.players[user].queue("turn", direction)
 
 @socketio.on("fire")
 def fire(msg):
     user = msg["username"]
-    m.players[user].fire()
+    m.players[user].queue("fire")
 
 if __name__ == "__main__":
     app.debug = True

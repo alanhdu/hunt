@@ -10,11 +10,7 @@
     return alert(err);
   }));
 
-  socket.on("ack user", (function() {
-    return setInterval((function() {
-      return requestUpdate();
-    }), 150);
-  }));
+  socket.on("update", render);
 
   $("#play").on("click", (function() {
     window.username = $("#username").val();
