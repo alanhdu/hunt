@@ -2,7 +2,7 @@ socket = io.connect()
 
 socket.on("frame", render)
 socket.on("error", ((err) -> alert(err)))
-socket.on("update", render)
+socket.on("update", update)
 
 $( "#play" ).on "click", (() ->
     window.username = $( "#username" ).val()

@@ -10,7 +10,7 @@
     return alert(err);
   }));
 
-  socket.on("update", render);
+  socket.on("update", update);
 
   $("#play").on("click", (function() {
     window.username = $("#username").val();

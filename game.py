@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import namedtuple, deque
 
 import numpy as np
 
@@ -52,9 +52,10 @@ def move(p, direction):
     elif direction == "v":
         return Point(x=p.x, y=p.y+1)
 
-# namedtuple is like a C struct. Only fields, no methods.
 Point = namedtuple("Point", ["y", "x"])
 Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
+
+speeds = {"bullet": 1, "move": 3}   # movement is 5 times slower than bullets
 
 class Game(object):
     def __init__(self, w=51, h=23, debug=False):
@@ -63,7 +64,7 @@ class Game(object):
 
         start = -np.zeros((h+2, w+2), dtype=bool)
         start[1:-1, 1:-1] = np.random.rand(h, w) > 0.5
-        for i in xrange(100):   # 100 interations of Rule 12345/3
+        for i in xrange(250):
             start = rule12345_3(start)
         self.arena = np.array([["*" if x else " " for x in y]
                                for y in start])
@@ -80,7 +81,8 @@ class Game(object):
 
         bullets = [Bullet(move(bullet.pos, bullet.direction), 
                           bullet.direction, bullet.source)
-                   for bullet in self.bullets]
+                   for bullet in self.bullets
+                   if self.inArena(move(bullet.pos, bullet.direction))]
         self.bullets = []
         for bullet in bullets:
             if self.arena[bullet.pos] == " ":
@@ -88,14 +90,25 @@ class Game(object):
                 self.bullets.append(bullet)
             elif self.arena[bullet.pos] == "*":
                 self.arena[bullet.pos] = " "
+            elif self.arena[bullet.pos] in "<>v^":
+                for player in self.players.itervalues():
+                    if player.pos == bullet.pos:
+                        player.hit(bullet.source)
+                        break
+
+        for player in self.players.itervalues():
+            player.update()
 
     def __str__(self):
         height, width = self.arena.shape
         return  "\n".join("".join(self.getType(x, y) 
                                   for x in xrange(width))
                           for y in xrange(height))
+    def inArena(self, p):
+        # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
+        return all(0 < a < b - 1 for a, b in zip(p, self.arena.shape))
     def getType(self, x, y):
-        if not self.isStar(x, y):
+        if self.arena[y, x] != "*":
             return self.arena[y, x]
 
         top    = self.isStar(x, y - 1)
@@ -127,36 +140,32 @@ class Game(object):
 
 class Player(object):
     def __init__(self, game):
-        h, w = game.arena.shape
-        x, y = np.random.randint(w), np.random.randint(h)
-        while game.arena[y, x] == "*":
-            x, y = np.random.randint(w), np.random.randint(h)
-        self.pos = Point(x=x, y=y)
-        self.facing = "<>v^"[np.random.randint(4)]
-
         self.game = game
-        game.arena[self.pos] = self.facing
+        self.rebirth()
 
-        mask = -np.zeros((h, w), dtype=bool)
-        mask[0, :].fill(False)      # ensure edges are visible
-        mask[-1, :].fill(False)
-        mask[:, 0].fill(False)
-        mask[:, -1].fill(False)
-
-        self.view = np.ma.masked_array(game.arena, mask)
-        self.updateMask()
-
-    def move(self, direction):
-        self.game.arena[self.pos] = ' '
-
-        p = move(self.pos, direction)
-
-        if self.game.arena[p] == " ":
-            self.pos = p
-            self.updateMask()
-
+    def rebirth(self, health=10, ammo=3000):
+        h, w = self.game.arena.shape
+        self.pos = Point(np.random.randint(h), np.random.randint(w))
+        while self.game.arena[self.pos] == "*":
+            self.pos = Point(np.random.randint(h), np.random.randint(w))
+        self.facing = "<>v^"[np.random.randint(4)]
         self.game.arena[self.pos] = self.facing
 
+        mask = np.zeros((h, w), dtype=bool)
+        # ensure visible edges
+        mask[1:-1, 1:-1] = -np.zeros((h-2, w-2), dtype=bool) 
+
+        self.view = np.ma.masked_array(self.game.arena, mask)
+        self.updateMask()
+
+        self.actions = deque()
+        self.lastActionTime = 0
+
+        self.health = health
+        self.ammo = ammo
+    def die(self):
+        self.game.arena[self.pos] = " "
+        self.rebirth()
 
     def updateMask(self):
         y, x = self.pos
@@ -188,18 +197,60 @@ class Player(object):
         # Flip so True -> Masked & Invisible
         self.view.mask *= -mask
 
+    def queue(self, action, *args, **kwargs):
+        if len(self.actions) > 5:       # only queue 5 actions at a time
+            self.actions.popleft()
+        self.actions.append((action, args, kwargs))
+
+    def update(self):
+        if self.actions:
+            func, args, kwargs = self.actions.popleft()
+            if func == "move" and self.lastActionTime == speeds["move"]:
+                self.move(*args, **kwargs)
+                self.lastActionTime = 0
+            elif func == "move":
+                self.lastActionTime += 1
+                self.actions.appendleft( (func, args, kwargs) )
+            elif func == "turn":
+                self.turn(*args, **kwargs)
+                self.lastActionTime = 0
+            elif func == "fire":
+                self.fire(*args, **kwargs)
+                self.lastActionTime = 0
+        else:
+            self.lastActionTime = 0
+
+        self.updateMask()
+
+    def move(self, direction):
+        self.game.arena[self.pos] = ' '
+        p = move(self.pos, direction)
+
+        if self.game.inArena(p) and self.game.arena[p] == " ":
+            self.pos = p
+            self.updateMask()
+        self.game.arena[self.pos] = self.facing
+
     def turn(self, direction):
         self.facing = direction
         self.updateMask()
         self.game.arena[self.pos] = self.facing
+
     def fire(self):
         pos = move(self.pos, self.facing)
-        bullet = Bullet(pos, self.facing, self)
-        self.game.bullets.append(bullet)
-        print bullet.pos
-        print self.game.arena.shape
-        self.game.arena[bullet.pos] = ":"
-        print str(self.game)
+        if self.game.inArena(pos) and self.ammo > 0:
+            bullet = Bullet(pos, self.facing, self)
+            self.ammo -= 1
+            if self.game.arena[bullet.pos] == " ":
+                self.game.bullets.append(bullet)
+                self.game.arena[bullet.pos] = ":"
+            elif self.game.arena[bullet.pos] == "*":
+                self.game.arena[bullet.pos] = " "
+
+    def hit(self, source):
+        self.health -= 3
+        if self.health <= 0:
+            self.die()
 
     def __str__(self):
         h, w = self.view.shape
@@ -209,3 +260,5 @@ class Player(object):
                               for x in xrange(w))
                       for y in xrange(h))
         return s
+    def to_json(self):
+        return {"arena": str(self), "ammo": self.ammo, "health": self.health}

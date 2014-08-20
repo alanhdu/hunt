@@ -9,21 +9,15 @@ socketio = SocketIO(app)
 
 m = game.Game(debug=True)
 
-# TODO make this work!
-def onError(self, t, value, trace):
-    message = "".join(traceback.format_exception(t, value, trace))
-    print "ERROR\t", message
-    emit("error", message)
-
 @app.route("/")
-def index(interval=0.2):
+def index(interval=0.05):
     @copy_current_request_context
     def run():
         while True:
             gevent.sleep(interval)
             m.update()
             for username, player in m.players.viewitems():
-                socketio.emit("update", str(player), room=username)
+                socketio.emit("update", player.to_json(), room=username)
     gevent.spawn(run)   # use separate thread
 
     return render_template("play.html")
@@ -43,18 +37,18 @@ def move(msg):
     direction = msg["direction"]
     user = msg["username"]
 
-    m.players[user].move(direction)
+    m.players[user].queue("move", direction)
 
 @socketio.on("turn")
 def turn(msg):
     direction = msg["direction"]
     user = msg["username"]
-    m.players[user].turn(direction)
+    m.players[user].queue("turn", direction)
 
 @socketio.on("fire")
 def fire(msg):
     user = msg["username"]
-    m.players[user].fire()
+    m.players[user].queue("fire")
 
 if __name__ == "__main__":
     app.debug = True
