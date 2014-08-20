@@ -1,3 +1,8 @@
+@update = (info) ->
+    render(info["arena"])
+    document.getElementById("health").innerHTML = info["health"]
+    document.getElementById("ammo").innerHTML = info["ammo"]
+
 @render = (arena) ->
     map = ""
     for chr, i in arena

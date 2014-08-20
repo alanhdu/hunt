@@ -135,27 +135,32 @@ class Game(object):
 
 class Player(object):
     def __init__(self, game):
-        h, w = game.arena.shape
-        x, y = np.random.randint(w), np.random.randint(h)
-        while game.arena[y, x] == "*":
-            x, y = np.random.randint(w), np.random.randint(h)
-        self.pos = Point(x=x, y=y)
-        self.facing = "<>v^"[np.random.randint(4)]
-
         self.game = game
-        game.arena[self.pos] = self.facing
+        self.rebirth()
 
-        mask = -np.zeros((h, w), dtype=bool)
-        mask[0, :].fill(False)      # ensure edges are visible
-        mask[-1, :].fill(False)
-        mask[:, 0].fill(False)
-        mask[:, -1].fill(False)
+    def rebirth(self, health=10, ammo=3000):
+        h, w = self.game.arena.shape
+        self.pos = Point(np.random.randint(h), np.random.randint(w))
+        while self.game.arena[self.pos] == "*":
+            self.pos = Point(np.random.randint(h), np.random.randint(w))
+        self.facing = "<>v^"[np.random.randint(4)]
+        self.game.arena[self.pos] = self.facing
 
-        self.view = np.ma.masked_array(game.arena, mask)
+        mask = np.zeros((h, w), dtype=bool)
+        # ensure visible edges
+        mask[1:-1, 1:-1] = -np.zeros((h-2, w-2), dtype=bool) 
+
+        self.view = np.ma.masked_array(self.game.arena, mask)
         self.updateMask()
 
         self.actions = deque()
         self.lastActionTime = 0
+
+        self.health = health
+        self.ammo = ammo
+    def death(self):
+        self.game.arena[self.pos] = " "
+        self.rebirth()
 
     def updateMask(self):
         y, x = self.pos
@@ -228,8 +233,9 @@ class Player(object):
 
     def fire(self):
         pos = move(self.pos, self.facing)
-        if self.game.inArena(pos):
+        if self.game.inArena(pos) and self.ammo > 0:
             bullet = Bullet(pos, self.facing, self)
+            self.ammo -= 1
             if self.game.arena[bullet.pos] == " ":
                 self.game.bullets.append(bullet)
                 self.game.arena[bullet.pos] = ":"
@@ -244,3 +250,5 @@ class Player(object):
                               for x in xrange(w))
                       for y in xrange(h))
         return s
+    def to_json(self):
+        return {"arena": str(self), "ammo": self.ammo, "health": self.health}
