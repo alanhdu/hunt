@@ -90,6 +90,11 @@ class Game(object):
                 self.bullets.append(bullet)
             elif self.arena[bullet.pos] == "*":
                 self.arena[bullet.pos] = " "
+            elif self.arena[bullet.pos] in "<>v^":
+                for player in self.players.itervalues():
+                    if player.pos == bullet.pos:
+                        player.hit(bullet.source)
+                        break
 
         for player in self.players.itervalues():
             player.update()
@@ -103,7 +108,7 @@ class Game(object):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
         return all(0 < a < b - 1 for a, b in zip(p, self.arena.shape))
     def getType(self, x, y):
-        if not self.isStar(x, y):
+        if self.arena[y, x] != "*":
             return self.arena[y, x]
 
         top    = self.isStar(x, y - 1)
@@ -158,7 +163,7 @@ class Player(object):
 
         self.health = health
         self.ammo = ammo
-    def death(self):
+    def die(self):
         self.game.arena[self.pos] = " "
         self.rebirth()
 
@@ -241,6 +246,11 @@ class Player(object):
                 self.game.arena[bullet.pos] = ":"
             elif self.game.arena[bullet.pos] == "*":
                 self.game.arena[bullet.pos] = " "
+
+    def hit(self, source):
+        self.health -= 3
+        if self.health <= 0:
+            self.die()
 
     def __str__(self):
         h, w = self.view.shape
