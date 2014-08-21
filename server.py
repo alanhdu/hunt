@@ -1,3 +1,6 @@
+import subprocess
+import glob
+
 import gevent
 from flask import Flask, render_template, copy_current_request_context
 from flask.ext.socketio import SocketIO, emit, join_room
@@ -7,7 +10,7 @@ import game
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-m = game.Game(debug=True)
+m = game.Game()
 
 @app.route("/")
 def index(interval=0.05):
@@ -52,4 +55,6 @@ def fire(msg):
 
 if __name__ == "__main__":
     app.debug = True
+    for path in glob.glob("static/*.coffee"):
+        subprocess.call(["coffee", "-c", path])
     socketio.run(app, port=8080)
