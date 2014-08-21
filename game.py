@@ -13,6 +13,10 @@ def rule12345_3(grid):
     n = numNeighbors(grid)
     return (n == 3) + ( (0 < n) * (n < 6) * grid)
 
+def rule1234_3(grid):
+    n = numNeighbors(grid)
+    return (n == 3) + ( (0 < n) * (n < 5) * grid)
+
 def debugMaze():
     maze = """\
 *****************************************************
@@ -63,9 +67,9 @@ class Game(object):
         self.bullets = []
 
         start = -np.zeros((h+2, w+2), dtype=bool)
-        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.5
-        for i in xrange(250):
-            start = rule12345_3(start)
+        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.8
+        for i in xrange(200):
+            start = rule1234_3(start)
         self.arena = np.array([["*" if x else " " for x in y]
                                for y in start])
         if debug:
