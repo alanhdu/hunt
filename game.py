@@ -78,8 +78,11 @@ class Game(object):
     def addPlayer(self, username):
         if username in self.players:
             raise ValueError('Username already taken')
-        self.players[username] = Player(self)
+        self.players[username] = Player(self, username)
     def update(self):
+        for player in self.players.itervalues():
+            player.update()
+
         for bullet in self.bullets:
             self.arena[bullet.pos] = " "
 
@@ -99,9 +102,6 @@ class Game(object):
                     if player.pos == bullet.pos:
                         player.hit(bullet.source)
                         break
-
-        for player in self.players.itervalues():
-            player.update()
 
     def __str__(self):
         height, width = self.arena.shape
@@ -143,8 +143,9 @@ class Game(object):
 
 
 class Player(object):
-    def __init__(self, game):
+    def __init__(self, game, name):
         self.game = game
+        self.name = name
         self.rebirth()
 
     def rebirth(self, health=10, ammo=3000):
@@ -207,6 +208,7 @@ class Player(object):
         self.actions.append((action, args, kwargs))
 
     def update(self):
+        self.msg = None
         if self.actions:
             func, args, kwargs = self.actions.popleft()
             if func == "move" and self.lastActionTime == speeds["move"]:
@@ -253,6 +255,8 @@ class Player(object):
 
     def hit(self, source):
         self.health -= 3
+        self.msg = "{src} hit you with a bullet".format(src=source.name)
+        source.msg = "You hit {target} with a bullet".format(target=self.name)
         if self.health <= 0:
             self.die()
 
@@ -265,4 +269,7 @@ class Player(object):
                       for y in xrange(h))
         return s
     def to_json(self):
-        return {"arena": str(self), "ammo": self.ammo, "health": self.health}
+        d = {"arena": str(self), "ammo": self.ammo, "health": self.health}
+        if self.msg:
+            d["msg"] = self.msg
+        return d

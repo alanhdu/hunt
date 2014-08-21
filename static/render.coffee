@@ -4,6 +4,7 @@
     for key in ["health", "ammo", "msg"]
         if key of info
             document.getElementById(key).innerHTML = info[key]
+    null
 
 @render = (arena) ->
     map = ""
