@@ -21,7 +21,7 @@ Otherwise you need to deliberately use python2.7, so run:
   Install the python dependencies with [pip](http://pip.readthedocs.org/en/latest/installing.html), or your preferred method.
 
   - **numpy**          -- Arrays for fast & easy arena implementation
-  -  **flask**          -- Lightweight web framework
+  - **flask**          -- Lightweight web framework
   - **flask-socketio** -- Bridge between flask and Socket-IO
 
 ### Coffeescript
@@ -45,7 +45,7 @@ facing in the maze, use the upper case version of the movement key (i.e.,
 HJKL).  You can only fire or throw things in the direction you're facing.
 Other commands are:
 
-- [ ]  f or 1   Fire a bullet (Takes 1 charge)
+- [ ] f or 1   Fire a bullet (Takes 1 charge)
 
 - [ ] g or 2   Throw grenade (Takes 9 charges)
 
@@ -104,9 +104,9 @@ Other commands are:
 
   - [ ] You can only fire three shots in a row, then the gun must cool off.
 
-  - [ ]  Shots move 5 times faster than you do.
+  - [ ] Shots move 5 times faster than you do.
 
-  - [ ]   To stab someone, you face that player and move at them.
+  - [ ] To stab someone, you face that player and move at them.
 
   - [ ] Stabbing does 2 points worth of damage and shooting does 5 points.
 
