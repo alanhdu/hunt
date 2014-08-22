@@ -59,7 +59,8 @@ def move(p, direction):
 Point = namedtuple("Point", ["y", "x"])
 Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
 
-speeds = {"bullet": 1, "move": 3}   # movement is 5 times slower than bullets
+speeds = {"bullet": 1, "move": 5}   # movement is 5 times slower than bullets
+damage = {"bullet": 5, "stab": 2}
 
 class Game(object):
     def __init__(self, w=51, h=23, debug=False):
@@ -78,6 +79,8 @@ class Game(object):
     def addPlayer(self, username):
         if username in self.players:
             raise ValueError('Username already taken')
+        for player in self.players.itervalues():
+            player.ammo += 5
         self.players[username] = Player(self, username)
     def update(self):
         for player in self.players.itervalues():
@@ -100,7 +103,7 @@ class Game(object):
             elif self.arena[bullet.pos] in "<>v^":
                 for player in self.players.itervalues():
                     if player.pos == bullet.pos:
-                        player.hit(bullet.source)
+                        player.hit(bullet.source, "bullet")
                         break
 
     def __str__(self):
@@ -148,7 +151,7 @@ class Player(object):
         self.name = name
         self.rebirth()
 
-    def rebirth(self, health=10, ammo=3000):
+    def rebirth(self, health=10, ammo=15):
         h, w = self.game.arena.shape
         self.pos = Point(np.random.randint(h), np.random.randint(w))
         while self.game.arena[self.pos] == "*":
@@ -211,7 +214,7 @@ class Player(object):
         self.msg = None
         if self.actions:
             func, args, kwargs = self.actions.popleft()
-            if func == "move" and self.lastActionTime == speeds["move"]:
+            if func == "move" and self.lastActionTime >= speeds["move"]:
                 self.move(*args, **kwargs)
                 self.lastActionTime = 0
             elif func == "move":
@@ -224,7 +227,7 @@ class Player(object):
                 self.fire(*args, **kwargs)
                 self.lastActionTime = 0
         else:
-            self.lastActionTime = 0
+            self.lastActionTime += 1
 
         self.updateMask()
 
@@ -232,9 +235,19 @@ class Player(object):
         self.game.arena[self.pos] = ' '
         p = move(self.pos, direction)
 
-        if self.game.inArena(p) and self.game.arena[p] == " ":
-            self.pos = p
-            self.updateMask()
+        if self.game.inArena(p):
+            if self.game.arena[p] == " ":
+                self.pos = p
+                self.updateMask()
+            elif self.game.arena[p] in "<>v^":  # stabbing
+                other = None
+                for player in self.game.players.itervalues():
+                    if player.pos == p:
+                        other = player
+                        break
+                other.hit(self, "stab")
+
+
         self.game.arena[self.pos] = self.facing
 
     def turn(self, direction):
@@ -253,11 +266,17 @@ class Player(object):
             elif self.game.arena[bullet.pos] == "*":
                 self.game.arena[bullet.pos] = " "
 
-    def hit(self, source):
-        self.health -= 3
-        self.msg = "{src} hit you with a bullet".format(src=source.name)
-        source.msg = "You hit {target} with a bullet".format(target=self.name)
+    def hit(self, src, method):
+        if method == "bullet":
+            self.msg = "{src} hit you with a bullet".format(src=src.name)
+            src.msg = "You hit {target} with a bullet".format(target=self.name)
+        elif method == "stab":
+            self.msg = "{src} stabbed you".format(src=src.name)
+            src.msg = "You stabbed {target}".format(target=self.name)
+
+        self.health -= damage[method]
         if self.health <= 0:
+            src.health += 2     #generate health
             self.die()
 
     def __str__(self):
