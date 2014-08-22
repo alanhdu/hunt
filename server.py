@@ -7,7 +7,7 @@ import game
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-m = game.Game(debug=True)
+m = game.Game()
 
 @app.route("/")
 def index(interval=0.05):
@@ -51,5 +51,4 @@ def fire(msg):
     m.players[user].queue("fire")
 
 if __name__ == "__main__":
-    app.debug = True
     socketio.run(app, port=8080)
