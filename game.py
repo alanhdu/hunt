@@ -213,10 +213,10 @@ class Player(object):
                 self.actions.appendleft( (func, args, kwargs) )
             elif func == "turn":
                 self.turn(*args, **kwargs)
-                self.lastActionTime = 0
+                self.lastActionTime += 0
             elif func == "fire":
                 self.fire(*args, **kwargs)
-                self.lastActionTime = 0
+                self.lastActionTime += 0
         else:
             self.lastActionTime = 0
 
