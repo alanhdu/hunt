@@ -1,6 +1,5 @@
 socket = io.connect()
 
-socket.on("frame", render)
 socket.on("error", ((err) -> alert(err)))
 socket.on("update", update)
 
