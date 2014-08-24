@@ -1,4 +1,4 @@
-from collections import namedtuple, deque
+from collections import namedtuple, deque, defaultdict
 
 import numpy as np
 
@@ -59,7 +59,7 @@ def move(p, direction):
 Point = namedtuple("Point", ["y", "x"])
 Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
 
-speeds = {"bullet": 1, "move": 5}   # movement is 5 times slower than bullets
+speed = defaultdict(int, {"move": 4})
 damage = {"bullet": 5, "stab": 2}
 
 class Game(object):
@@ -214,18 +214,16 @@ class Player(object):
         self.msg = None
         if self.actions:
             func, args, kwargs = self.actions.popleft()
-            if func == "move" and self.lastActionTime >= speeds["move"]:
+            if func == "move" and self.lastActionTime >= speed["move"]:
                 self.move(*args, **kwargs)
                 self.lastActionTime = 0
             elif func == "move":
                 self.lastActionTime += 1
                 self.actions.appendleft( (func, args, kwargs) )
-            elif func == "turn":
+            elif func == "turn" and self.lastActionTime >= speed["turn"]:
                 self.turn(*args, **kwargs)
-                self.lastActionTime = 0
-            elif func == "fire":
+            elif func == "fire" and self.lastActionTime >= speed["fire"]:
                 self.fire(*args, **kwargs)
-                self.lastActionTime = 0
         else:
             self.lastActionTime += 1
 

@@ -5,12 +5,16 @@ socket.on("error", ((err) -> alert(err)))
 socket.on("update", update)
 
 $( "#play" ).on "click", (() ->
-    window.username = $( "#username" ).val()
-    socket.emit('begin', {width:51, height:23, username:username})
+    if window.uname is undefined
+        window.uname = $( "#username" ).val()
+        socket.emit('begin', {width:51, height:23, username:window.uname})
+    else
+        alert("Already logged in!")
 )
 
 $( window ).keydown ((evt) ->
-    if evt.target.tagName.toLowerCase() is "input"
+    if evt.target.tagName.toLowerCase() is "input" or window.uname is undefined or
+      evt.ctrlKey
         return true
 
     key = evt.which
@@ -26,15 +30,13 @@ $( window ).keydown ((evt) ->
             return true
 
     evt.preventDefault()
-    username = window.username
 
     if direction isnt undefined
         if evt.shiftKey
             type = "turn"
         else
             type = "move"
-        socket.emit(type, {direction: direction, username: username})
+        socket.emit(type, {direction: direction, username: window.uname})
     if fire
-        console.log("Firing")
-        socket.emit("fire", {username: username})
+        socket.emit("fire", {username: window.uname})
 )

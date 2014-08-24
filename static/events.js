@@ -13,17 +13,21 @@
   socket.on("update", update);
 
   $("#play").on("click", (function() {
-    window.username = $("#username").val();
-    return socket.emit('begin', {
-      width: 51,
-      height: 23,
-      username: username
-    });
+    if (window.uname === void 0) {
+      window.uname = $("#username").val();
+      return socket.emit('begin', {
+        width: 51,
+        height: 23,
+        username: window.uname
+      });
+    } else {
+      return alert("Already logged in!");
+    }
   }));
 
   $(window).keydown((function(evt) {
-    var chr, direction, fire, key, type, username;
-    if (evt.target.tagName.toLowerCase() === "input") {
+    var chr, direction, fire, key, type;
+    if (evt.target.tagName.toLowerCase() === "input" || window.uname === void 0 || evt.ctrlKey) {
       return true;
     }
     key = evt.which;
@@ -48,7 +52,6 @@
         return true;
     }
     evt.preventDefault();
-    username = window.username;
     if (direction !== void 0) {
       if (evt.shiftKey) {
         type = "turn";
@@ -57,13 +60,12 @@
       }
       socket.emit(type, {
         direction: direction,
-        username: username
+        username: window.uname
       });
     }
     if (fire) {
-      console.log("Firing");
       return socket.emit("fire", {
-        username: username
+        username: window.uname
       });
     }
   }));
