@@ -35,6 +35,11 @@ def begin(msg):
     except ValueError:
         emit("error", "name already taken")
 
+@socketio.on("logoff")
+def logoff(msg):
+    uname = msg["username"]
+    del m.players[uname]
+
 @socketio.on("move")
 def move(msg):
     direction = msg["direction"]

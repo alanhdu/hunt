@@ -12,6 +12,11 @@ $( "#play" ).on "click", (() ->
         alert("Already logged in!")
 )
 
+window.onunload = ((evt) ->
+    if window.uname isnt undefined
+        socket.emit("logoff", {username:window.uname})
+)
+
 $( window ).keydown ((evt) ->
     if evt.target.tagName.toLowerCase() is "input" or window.uname is undefined or
       evt.ctrlKey

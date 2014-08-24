@@ -25,6 +25,14 @@
     }
   }));
 
+  window.onunload = (function(evt) {
+    if (window.uname !== void 0) {
+      return socket.emit("logoff", {
+        username: window.uname
+      });
+    }
+  });
+
   $(window).keydown((function(evt) {
     var chr, direction, fire, key, type;
     if (evt.target.tagName.toLowerCase() === "input" || window.uname === void 0 || evt.ctrlKey) {
