@@ -1,3 +1,6 @@
+import subprocess
+import glob
+
 import gevent
 from flask import Flask, render_template, copy_current_request_context
 from flask.ext.socketio import SocketIO, emit, join_room
@@ -31,6 +34,11 @@ def begin(msg):
         emit("ack user")
     except ValueError:
         emit("error", "name already taken")
+
+@socketio.on("logoff")
+def logoff(msg):
+    uname = msg["username"]
+    del m.players[uname]
 
 @socketio.on("move")
 def move(msg):

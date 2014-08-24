@@ -1,7 +1,10 @@
 @update = (info) ->
     render(info["arena"])
-    document.getElementById("health").innerHTML = info["health"]
-    document.getElementById("ammo").innerHTML = info["ammo"]
+
+    for key in ["health", "ammo", "msg"]
+        if key of info
+            document.getElementById(key).innerHTML = info[key]
+    null
 
 @render = (arena) ->
     map = ""
