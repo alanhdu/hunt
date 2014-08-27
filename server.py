@@ -19,9 +19,13 @@ def index(interval=0.05):
         while True:
             gevent.sleep(interval)
             m.update()
-            for username, player in m.players.viewitems():
-                socketio.emit("update", player.to_json(), room=username)
-    gevent.spawn(run)   # use separate thread
+
+            emit = socketio.emit
+            jobs = [gevent.spawn(emit, "update", player.to_json(), room=uname)
+                    for uname, player in m.players.iteritems()]
+            gevent.joinall(jobs)
+
+    gevent.spawn(run)
 
     return render_template("play.html")
 

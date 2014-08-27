@@ -1,10 +1,18 @@
 @update = (info) ->
+    document.getElementById("scores").innerHTML = getScoreboard(info["scores"])
+
+    for key in ["health", "ammo", "msg", "arena"]
+        if key of info
+            document.getElementById(key).innerHTML = escape(info[key])
+    null
+
+getScoreboard = (scores) ->
     unameLength = "Username".length
     statLengths = {}
 
-    for key, stat of info["scores"][window.uname]
+    for key, stat of scores[window.uname]
         statLengths[key] = key.length
-    for uname, stats of info["scores"]
+    for uname, stats of scores
         if uname.length > unameLength
             unameLength = uname.length
         for key, stat of stats
@@ -15,21 +23,15 @@
     map = pad("Username", unameLength) + "|" + (pad(key, len) for key, len of statLengths).join("|")
     map += "\n" + Array(map.length + 1).join("-")
 
-    for uname, stats of info["scores"]
+    for uname, stats of scores
         uname = pad(uname, unameLength)
         stats = (pad(stats[key], len) for key, len of statLengths).join("|")
-        console.log(uname.length)
         console.log(pad("Username", unameLength).length)
         map += "\n#{uname}|#{stats}"
 
-    document.getElementById("scores").innerHTML = escape(map)
+    return escape(map)
 
-    for key in ["health", "ammo", "msg", "arena"]
-        if key of info
-            document.getElementById(key).innerHTML = escape(info[key])
-    null
-
-@pad = (str, len) ->
+pad = (str, len) ->
     str = String(str)
     str += Array(len - str.length + 1).join(" ")
     return str
