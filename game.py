@@ -3,6 +3,8 @@ from collections import namedtuple, deque, defaultdict
 
 import numpy as np
 
+import custom_exceptions as excpt
+
 def numNeighbors(grid):
     m = grid.astype(int)
     m[1:-1, 1:-1] = (m[:-2,  :-2] + m[:-2, 1:-1] + m[:-2,  2:] +
@@ -79,7 +81,7 @@ class Game(object):
 
     def addPlayer(self, username):
         if username in self.players:
-            raise ValueError('Username already taken')
+            raise excpt.UsernameTaken(username)
         for player in self.players.itervalues():
             player.ammo += 5
         self.players[username] = Player(self, username)
@@ -178,7 +180,7 @@ class Player(object):
     def updateMask(self):
         y, x = self.pos
         if self.game.arena[self.pos] == "*":
-            raise IndexError("Position located at a Wall")
+            raise excpt.HittingAWall()
         row = self.game.arena[y, :]
         col = self.game.arena[:, x]
 

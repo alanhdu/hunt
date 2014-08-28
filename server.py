@@ -2,13 +2,20 @@ import subprocess
 import glob
 
 import gevent
-from flask import Flask, render_template, copy_current_request_context
-from flask.ext.socketio import SocketIO, emit, join_room
+from flask import Flask, render_template, copy_current_request_context, request
+from sockets import SocketIO, join_room, emit
+from socketio.namespace import BaseNamespace
 
 import game
+import custom_exceptions as excpt
 
 app = Flask(__name__)
 socketio = SocketIO(app)
+socketio.add_exception_handler(excpt.ExceptionHandler(socketio).run)
+
+
+def exception_handler(exception, value, traceback):
+    raise exception, value, traceback
 
 m = game.Game()
 
@@ -31,13 +38,9 @@ def index(interval=0.05):
 
 @socketio.on("begin")
 def begin(msg):
-    try:
-        m.addPlayer(msg["username"])
-        player = m.players[msg["username"]]
-        join_room(msg["username"])
-        emit("ack user")
-    except ValueError:
-        emit("error", "name already taken")
+    m.addPlayer(msg["username"])
+    player = m.players[msg["username"]]
+    join_room(msg["username"])
 
 @socketio.on("logoff")
 def logoff(msg):

@@ -21,8 +21,11 @@ Otherwise you need to deliberately use python2.7, so run:
   Install the python dependencies with [pip](http://pip.readthedocs.org/en/latest/installing.html), or your preferred method.
 
   - **numpy**          -- Arrays for fast & easy arena implementation
-  -  **flask**          -- Lightweight web framework
+  -  **flask**         -- Lightweight web framework
   - **flask-socketio** -- Bridge between flask and Socket-IO
+    - gevent           -- Lightweight asyncs and greenlets 
+    - gevent-socketio
+    
 
 ### Coffeescript
 - - -
