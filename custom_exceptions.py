@@ -17,6 +17,6 @@ class UsernameTaken(UserError):
         super(UsernameTaken, self).__init__("Username {} already taken".format(uname))
 
 class HittingAWall(UserError):
-    def __init__(self, uname):
+    def __init__(self):
         super(HittingAWall, self).__init__("You've somehow displaced a wall")
 
