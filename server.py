@@ -10,12 +10,7 @@ import game
 import custom_exceptions as excpt
 
 app = Flask(__name__)
-socketio = SocketIO(app)
-socketio.add_exception_handler(excpt.ExceptionHandler(socketio).run)
-
-
-def exception_handler(exception, value, traceback):
-    raise exception, value, traceback
+socketio = SocketIO(app, excpt.exception_handler)
 
 m = game.Game()
 

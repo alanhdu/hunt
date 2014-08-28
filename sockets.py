@@ -43,10 +43,6 @@ class SocketIO(object):
         self.exception_handler = exception_handler
         if exception_handler is not None and not callable(exception_handler):
             raise ValueError("exception_handler must be callable")
-    def add_exception_handler(self, exception_handler=None):
-        self.exception_handler = exception_handler
-        if exception_handler is not None and not callable(exception_handler):
-            raise ValueError("exception_handler must be callable")
 
     def init_app(self, app):
         app.wsgi_app = SocketIOMiddleware(app, self)
@@ -56,6 +52,7 @@ class SocketIO(object):
             socketio = self
             base_emit = base_namespace.emit
             base_send = base_namespace.send
+
 
             def initialize(self):
                 self.rooms = set()
@@ -179,6 +176,7 @@ class SocketIO(object):
                     try:
                         f(*args, **kwargs)
                     except:
+                        print sys.exc_info()
                         self.exception_handler(*sys.exc_info(), ns_name=ns_name)
 
                 self.on_message(message, func, ns_name) 
