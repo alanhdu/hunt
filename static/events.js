@@ -4,8 +4,6 @@
 
   socket = io.connect();
 
-  socket.on("frame", render);
-
   socket.on("error", (function(err) {
     return alert(err);
   }));

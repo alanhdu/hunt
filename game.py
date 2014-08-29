@@ -1,6 +1,9 @@
+from __future__ import division
 from collections import namedtuple, deque, defaultdict
 
 import numpy as np
+
+import custom_exceptions as excpt
 
 def numNeighbors(grid):
     m = grid.astype(int)
@@ -78,7 +81,7 @@ class Game(object):
 
     def addPlayer(self, username):
         if username in self.players:
-            raise ValueError('Username already taken')
+            raise excpt.UsernameTaken(username)
         for player in self.players.itervalues():
             player.ammo += 5
         self.players[username] = Player(self, username)
@@ -149,6 +152,8 @@ class Player(object):
     def __init__(self, game, name):
         self.game = game
         self.name = name
+        self.deaths = 0
+        self.kills = 0
         self.rebirth()
 
     def rebirth(self, health=10, ammo=15):
@@ -171,14 +176,11 @@ class Player(object):
 
         self.health = health
         self.ammo = ammo
-    def die(self):
-        self.game.arena[self.pos] = " "
-        self.rebirth()
 
     def updateMask(self):
         y, x = self.pos
         if self.game.arena[self.pos] == "*":
-            raise IndexError("Position located at a Wall")
+            raise excpt.HittingAWall()
         row = self.game.arena[y, :]
         col = self.game.arena[:, x]
 
@@ -275,7 +277,11 @@ class Player(object):
         self.health -= damage[method]
         if self.health <= 0:
             src.health += 2     #generate health
-            self.die()
+            src.kills += 1
+            self.deaths += 1
+
+            self.game.arena[self.pos] = " "
+            self.rebirth()
 
     def __str__(self):
         h, w = self.view.shape
@@ -285,8 +291,13 @@ class Player(object):
                               for x in xrange(w))
                       for y in xrange(h))
         return s
+    def score(self):
+        return (self.kills + 1) / (self.deaths + 1)
     def to_json(self):
-        d = {"arena": str(self), "ammo": self.ammo, "health": self.health}
+        d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
+             "scores": {name: {"kills":player.kills, "deaths":player.deaths}
+                        for name, player in self.game.players.iteritems()}}
         if self.msg:
             d["msg"] = self.msg
+
         return d

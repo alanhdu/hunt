@@ -23,6 +23,9 @@ Otherwise you need to deliberately use python2.7, so run:
   - **numpy**          -- Arrays for fast & easy arena implementation
   - **flask**          -- Lightweight web framework
   - **flask-socketio** -- Bridge between flask and Socket-IO
+    - gevent           -- Lightweight asyncs and greenlets 
+    - gevent-socketio
+    
 
 ### Coffeescript
 - - -
