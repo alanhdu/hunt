@@ -223,8 +223,10 @@ class Player(object):
                 self.lastActionTime += 1
                 self.actions.appendleft( (func, args, kwargs) )
             elif func == "turn" and self.lastActionTime >= speed["turn"]:
+                self.lastActionTime += 1
                 self.turn(*args, **kwargs)
             elif func == "fire" and self.lastActionTime >= speed["fire"]:
+                self.lastActionTime += 1
                 self.fire(*args, **kwargs)
         else:
             self.lastActionTime += 1
