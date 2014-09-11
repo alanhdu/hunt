@@ -32,7 +32,7 @@
   });
 
   $(window).keydown((function(evt) {
-    var chr, direction, fire, key, type;
+    var chr, cloak, direction, fire, key, scan, type;
     if (evt.target.tagName.toLowerCase() === "input" || window.uname === void 0 || evt.ctrlKey) {
       return true;
     }
@@ -54,6 +54,12 @@
       case 'F':
         fire = true;
         break;
+      case 'S':
+        scan = true;
+        break;
+      case 'C':
+        cloak = true;
+        break;
       default:
         return true;
     }
@@ -64,13 +70,20 @@
       } else {
         type = "move";
       }
-      socket.emit(type, {
+      return socket.emit(type, {
         direction: direction,
         username: window.uname
       });
-    }
-    if (fire) {
+    } else if (fire) {
       return socket.emit("fire", {
+        username: window.uname
+      });
+    } else if (scan) {
+      return socket.emit("scan", {
+        username: window.uname
+      });
+    } else if (cloak) {
+      return socket.emit("cloak", {
         username: window.uname
       });
     }

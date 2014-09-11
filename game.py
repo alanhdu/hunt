@@ -154,6 +154,8 @@ class Player(object):
         self.name = name
         self.deaths = 0
         self.kills = 0
+        self.cloak = False
+        self.scan = False
         self.rebirth()
 
     def rebirth(self, health=10, ammo=15):
@@ -197,9 +199,13 @@ class Player(object):
 
         mask[y, x] = True
 
-        # Expand all masks so you can see the walls
-        # TODO Make expansion work with edges
+        # Scan for other player's locations
+        if self.scan:
+            for player in self.game.players.itervalues():
+                if not player.cloak:
+                    mask[player.pos] = True
 
+        # Expand all masks so you can see the walls
         mask[1:-1, 1:-1] = (mask[:-2,  :-2] + mask[:-2, 1:-1] + mask[:-2,  2:] +
                             mask[1:-1, :-2] + mask[1:-1,1:-1] + mask[1:-1, 2:] +
                             mask[2:,   :-2] + mask[2:,  1:-1] + mask[2:,   2:])
@@ -236,6 +242,13 @@ class Player(object):
     def move(self, direction):
         self.game.arena[self.pos] = ' '
         p = move(self.pos, direction)
+
+        if self.cloak:
+            self.ammo -= 0.05
+        else:
+            for player in self.game.players.itervalues():
+                if player.scan and player is not self:
+                    player.ammo -= 0.05
 
         if self.game.inArena(p):
             if self.game.arena[p] == " ":

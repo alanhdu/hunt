@@ -60,5 +60,17 @@ def fire(msg):
     user = msg["username"]
     m.players[user].queue("fire")
 
+@socketio.on("scan")
+def scan(msg):
+    user = msg["username"]
+    m.players[user].scan = not m.players[user].scan
+
+@socketio.on("cloak")
+def scan(msg):
+    user = msg["username"]
+    m.players[user].cloak = not m.players[user].cloak
+
 if __name__ == "__main__":
+    for path in glob.glob("static/*.coffee"):
+        subprocess.call(["coffee", "-c", path])
     socketio.run(app, port=8080)

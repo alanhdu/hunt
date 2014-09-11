@@ -30,6 +30,8 @@ $( window ).keydown ((evt) ->
         when 'L' then direction = '>'
         when 'H' then direction = '<'
         when 'F' then fire = true
+        when 'S' then scan = true
+        when 'C' then cloak = true
         else
             return true
 
@@ -41,6 +43,10 @@ $( window ).keydown ((evt) ->
         else
             type = "move"
         socket.emit(type, {direction: direction, username: window.uname})
-    if fire
+    else if fire
         socket.emit("fire", {username: window.uname})
+    else if scan
+        socket.emit("scan", {username: window.uname})
+    else if cloak
+        socket.emit("cloak", {username: window.uname})
 )
