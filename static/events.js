@@ -10,13 +10,16 @@
 
   socket.on("update", update);
 
+  socket.on("acknowledged", function(info) {
+    return window.uname = $("#username").val();
+  });
+
   $("#play").on("click", (function() {
     if (window.uname === void 0) {
-      window.uname = $("#username").val();
       return socket.emit('begin', {
         width: 51,
         height: 23,
-        username: window.uname
+        username: $("#username").val()
       });
     } else {
       return alert("Already logged in!");

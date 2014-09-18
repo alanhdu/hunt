@@ -37,6 +37,8 @@ def begin(msg):
     player = m.players[msg["username"]]
     join_room(msg["username"])
 
+    socketio.emit("acknowledged", {}, room=msg["username"])
+
 @socketio.on("logoff")
 def logoff(msg):
     uname = msg["username"]

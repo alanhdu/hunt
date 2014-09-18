@@ -2,12 +2,13 @@ socket = io.connect()
 
 socket.on("error", ((err) -> alert(err)))
 socket.on("update", update)
+socket.on("acknowledged", (info) ->
+    window.uname = $("#username").val())
 # socket.on("disconnect", () -> alert("Server down, disconnected"))
 
 $( "#play" ).on "click", (() ->
     if window.uname is undefined
-        window.uname = $( "#username" ).val()
-        socket.emit('begin', {width:51, height:23, username:window.uname})
+        socket.emit('begin', {width:51, height:23, username:$("#username").val()})
     else
         alert("Already logged in!")
 )

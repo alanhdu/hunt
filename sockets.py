@@ -201,7 +201,6 @@ class SocketIO(object):
                     try:
                         f(*args, **kwargs)
                     except:
-                        print sys.exc_info()
                         self.exception_handler(*sys.exc_info(), ns_name=ns_name)
 
                 self.on_message(message, func, ns_name) 

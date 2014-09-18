@@ -292,6 +292,11 @@ class Player(object):
 
         self.health -= damage[method]
         if self.health <= 0:
+            self.msg = "{src} killed you".format(src=src.name)
+            src.msg = "You killed {target}".format(target=self.name)
+
+
+
             src.health += 2     #generate health
             src.kills += 1
             self.deaths += 1
