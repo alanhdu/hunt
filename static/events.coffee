@@ -4,7 +4,12 @@ socket.on("error", ((err) -> alert(err)))
 socket.on("update", update)
 socket.on("acknowledged", (info) ->
     window.uname = $("#username").val())
-# socket.on("disconnect", () -> alert("Server down, disconnected"))
+
+socket.on("disconnect", () ->
+    window.uname = undefined
+    clear()
+    document.getElementById("status").innerHTML = "Disconnected from server"
+    null)
 
 $( "#play" ).on "click", (() ->
     if window.uname is undefined

@@ -14,6 +14,13 @@
     return window.uname = $("#username").val();
   });
 
+  socket.on("disconnect", function() {
+    window.uname = void 0;
+    clear();
+    document.getElementById("status").innerHTML = "Disconnected from server";
+    return null;
+  });
+
   $("#play").on("click", (function() {
     if (window.uname === void 0) {
       return socket.emit('begin', {

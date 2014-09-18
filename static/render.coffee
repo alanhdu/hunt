@@ -7,6 +7,11 @@
 
     null
 
+@clear = () ->
+    for key in ["health", "ammo", "msg", "arena", "scores"]
+        document.getElementById(key).innerHTML = ""
+
+
 getScoreboard = (scores) ->
     unameLength = "Username".length
     statLengths = {}

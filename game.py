@@ -1,5 +1,6 @@
 from __future__ import division
 from collections import namedtuple, deque, defaultdict
+from decimal import *
 
 import numpy as np
 
@@ -82,13 +83,19 @@ class Game(object):
     def addPlayer(self, username):
         if username in self.players:
             raise excpt.UsernameTaken(username)
-        for player in self.players.itervalues():
-            player.ammo += 5
         self.players[username] = Player(self, username)
+
+    def findPlayer(self, pos):
+        for player in self.players.itervalues():
+            if player.pos == pos:
+                return player
+
     def update(self):
+        # Update player movements
         for player in self.players.itervalues():
             player.update()
 
+        # Update bullet movements
         for bullet in self.bullets:
             self.arena[bullet.pos] = " "
 
@@ -104,10 +111,11 @@ class Game(object):
             elif self.arena[bullet.pos] == "*":
                 self.arena[bullet.pos] = " "
             elif self.arena[bullet.pos] in "<>v^":
-                for player in self.players.itervalues():
-                    if player.pos == bullet.pos:
-                        player.hit(bullet.source, "bullet")
-                        break
+                player = self.findPlayer(bullet.pos)
+                player.hit(bullet.source, "bullet")
+        # Update scores
+        for player in self.players.itervalues():
+            player.updateScore()
 
     def __str__(self):
         height, width = self.arena.shape
@@ -152,10 +160,9 @@ class Player(object):
     def __init__(self, game, name):
         self.game = game
         self.name = name
-        self.deaths = 0
-        self.kills = 0
-        self.cloak = False
-        self.scan = False
+        self.deaths = self.kills = self.currentScore = 0
+        self.score = Decimal(0)
+        self.cloak = self.scan = False
         self.rebirth()
 
     def rebirth(self, health=10, ammo=15):
@@ -178,6 +185,9 @@ class Player(object):
 
         self.health = health
         self.ammo = ammo
+
+        for player in self.game.players.itervalues():
+            player.ammo += 5
 
     def updateMask(self):
         y, x = self.pos
@@ -256,13 +266,8 @@ class Player(object):
                 self.updateMask()
             elif self.game.arena[p] in "<>v^" and direction == self.facing:
                 # if we're facing someone and move into them, stab
-                other = None
-                for player in self.game.players.itervalues():
-                    if player.pos == p:
-                        other = player
-                        break
+                other = self.game.findPlayer(p)
                 other.hit(self, "stab")
-
 
         self.game.arena[self.pos] = self.facing
 
@@ -273,14 +278,21 @@ class Player(object):
 
     def fire(self):
         pos = move(self.pos, self.facing)
-        if self.game.inArena(pos) and self.ammo > 0:
-            bullet = Bullet(pos, self.facing, self)
-            self.ammo -= 1
-            if self.game.arena[bullet.pos] == " ":
-                self.game.bullets.append(bullet)
-                self.game.arena[bullet.pos] = ":"
-            elif self.game.arena[bullet.pos] == "*":
-                self.game.arena[bullet.pos] = " "
+        if self.game.inArena(pos):
+            if self.ammo > 0:
+                bullet = Bullet(pos, self.facing, self)
+                self.ammo -= 1
+                if self.game.arena[bullet.pos] == " ":
+                    self.game.bullets.append(bullet)
+                    self.game.arena[bullet.pos] = ":"
+                elif self.game.arena[bullet.pos] == "*":
+                    self.game.arena[bullet.pos] = " "
+                elif self.game.arena[bullet.pos] in "v^<>": # Direct hit
+                    other = self.game.findPlayer(bullet.pos)
+                    other.hit(self, "bullet")
+            else:
+                self.msg = "You are out of ammo"
+
 
     def hit(self, src, method):
         if method == "bullet":
@@ -295,14 +307,20 @@ class Player(object):
             self.msg = "{src} killed you".format(src=src.name)
             src.msg = "You killed {target}".format(target=self.name)
 
-
-
             src.health += 2     #generate health
             src.kills += 1
             self.deaths += 1
 
+            self.currentScore -= 1
+            src.currentScore += 1
+
             self.game.arena[self.pos] = " "
             self.rebirth()
+
+    def updateScore(self):
+        # use Decimal to avoid annoying scores like 0.000000000001
+        self.score = Decimal('0.998') * self.score + self.currentScore
+        self.currentScore = 0
 
     def __str__(self):
         h, w = self.view.shape
@@ -312,11 +330,11 @@ class Player(object):
                               for x in xrange(w))
                       for y in xrange(h))
         return s
-    def score(self):
-        return (self.kills + 1) / (self.deaths + 1)
+
     def to_json(self):
         d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
-             "scores": {name: {"kills":player.kills, "deaths":player.deaths}
+             "scores": {name: {"kills":player.kills, "deaths":player.deaths,
+                               "score":round(player.score, 3)}      # 3 decimal points of score
                         for name, player in self.game.players.iteritems()}}
         if self.msg:
             d["msg"] = self.msg
