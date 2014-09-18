@@ -28,14 +28,14 @@
             </div>
         </div>
 
-        <div class="content">
-            <div id="arena"></div>
-            <div id="status">
+        <div class="content" class="row">
+            <div id="arena" class="col-md-6"></div>
+            <div id="status" class="col-md-4">
                 Health: <div id="health"></div>
                 Ammo: <div id="ammo"></div>
                 <div id="msg"></div>
+                <div id="scores"> </div>
             </div>
-            <div id="scores"> </div>
         </div>
 
 	<script type="text/javascript" src="{{ url_for('static', filename='events.js') }}"></script>

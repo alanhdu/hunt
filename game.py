@@ -254,7 +254,8 @@ class Player(object):
             if self.game.arena[p] == " ":
                 self.pos = p
                 self.updateMask()
-            elif self.game.arena[p] in "<>v^":  # stabbing
+            elif self.game.arena[p] in "<>v^" and direction == self.facing:
+                # if we're facing someone and move into them, stab
                 other = None
                 for player in self.game.players.itervalues():
                     if player.pos == p:

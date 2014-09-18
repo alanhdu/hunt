@@ -2,6 +2,7 @@ socket = io.connect()
 
 socket.on("error", ((err) -> alert(err)))
 socket.on("update", update)
+# socket.on("disconnect", () -> alert("Server down, disconnected"))
 
 $( "#play" ).on "click", (() ->
     if window.uname is undefined
