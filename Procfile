@@ -1,1 +1,1 @@
-web: python server.py
+web: gunicorn --worker-class socketio.sgunicorn.GeventSocketIOWorker server:app
