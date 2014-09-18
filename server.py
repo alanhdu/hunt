@@ -10,9 +10,17 @@ import game
 import custom_exceptions as excpt
 
 app = Flask(__name__)
-socketio = SocketIO(app, excpt.exception_handler)
+socketio = SocketIO(app)
+
+@socketio.on_error_default
+def exception_handler(value):
+    if isinstance(value, excpt.UserError):
+        emit("error", str(value))
+    else:
+        raise value
 
 m = game.Game()
+
 
 @app.route("/")
 def index(interval=0.05):
