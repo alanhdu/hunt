@@ -2,11 +2,18 @@ socket = io.connect()
 
 socket.on("error", ((err) -> alert(err)))
 socket.on("update", update)
+socket.on("acknowledged", (info) ->
+    window.uname = $("#username").val())
+
+socket.on("disconnect", () ->
+    window.uname = undefined
+    clear()
+    document.getElementById("status").innerHTML = "Disconnected from server"
+    null)
 
 $( "#play" ).on "click", (() ->
     if window.uname is undefined
-        window.uname = $( "#username" ).val()
-        socket.emit('begin', {width:51, height:23, username:window.uname})
+        socket.emit('begin', {width:51, height:23, username:$("#username").val()})
     else
         alert("Already logged in!")
 )
@@ -30,6 +37,8 @@ $( window ).keydown ((evt) ->
         when 'L' then direction = '>'
         when 'H' then direction = '<'
         when 'F' then fire = true
+        when 'S' then scan = true
+        when 'C' then cloak = true
         else
             return true
 
@@ -41,6 +50,10 @@ $( window ).keydown ((evt) ->
         else
             type = "move"
         socket.emit(type, {direction: direction, username: window.uname})
-    if fire
+    else if fire
         socket.emit("fire", {username: window.uname})
+    else if scan
+        socket.emit("scan", {username: window.uname})
+    else if cloak
+        socket.emit("cloak", {username: window.uname})
 )

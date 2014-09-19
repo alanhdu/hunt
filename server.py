@@ -10,9 +10,17 @@ import game
 import custom_exceptions as excpt
 
 app = Flask(__name__)
-socketio = SocketIO(app, excpt.exception_handler)
+socketio = SocketIO(app)
+
+@socketio.on_error_default
+def exception_handler(value):
+    if isinstance(value, excpt.UserError):
+        emit("error", str(value))
+    else:
+        raise value
 
 m = game.Game()
+
 
 @app.route("/")
 def index(interval=0.05):
@@ -37,6 +45,8 @@ def begin(msg):
     player = m.players[msg["username"]]
     join_room(msg["username"])
 
+    socketio.emit("acknowledged", {}, room=msg["username"])
+
 @socketio.on("logoff")
 def logoff(msg):
     uname = msg["username"]
@@ -59,6 +69,16 @@ def turn(msg):
 def fire(msg):
     user = msg["username"]
     m.players[user].queue("fire")
+
+@socketio.on("scan")
+def scan(msg):
+    user = msg["username"]
+    m.players[user].scan = not m.players[user].scan
+
+@socketio.on("cloak")
+def scan(msg):
+    user = msg["username"]
+    m.players[user].cloak = not m.players[user].cloak
 
 if __name__ == "__main__":
     socketio.run(app)

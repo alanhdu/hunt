@@ -10,13 +10,23 @@
 
   socket.on("update", update);
 
+  socket.on("acknowledged", function(info) {
+    return window.uname = $("#username").val();
+  });
+
+  socket.on("disconnect", function() {
+    window.uname = void 0;
+    clear();
+    document.getElementById("status").innerHTML = "Disconnected from server";
+    return null;
+  });
+
   $("#play").on("click", (function() {
     if (window.uname === void 0) {
-      window.uname = $("#username").val();
       return socket.emit('begin', {
         width: 51,
         height: 23,
-        username: window.uname
+        username: $("#username").val()
       });
     } else {
       return alert("Already logged in!");
@@ -32,7 +42,7 @@
   });
 
   $(window).keydown((function(evt) {
-    var chr, direction, fire, key, type;
+    var chr, cloak, direction, fire, key, scan, type;
     if (evt.target.tagName.toLowerCase() === "input" || window.uname === void 0 || evt.ctrlKey) {
       return true;
     }
@@ -54,6 +64,12 @@
       case 'F':
         fire = true;
         break;
+      case 'S':
+        scan = true;
+        break;
+      case 'C':
+        cloak = true;
+        break;
       default:
         return true;
     }
@@ -64,13 +80,20 @@
       } else {
         type = "move";
       }
-      socket.emit(type, {
+      return socket.emit(type, {
         direction: direction,
         username: window.uname
       });
-    }
-    if (fire) {
+    } else if (fire) {
       return socket.emit("fire", {
+        username: window.uname
+      });
+    } else if (scan) {
+      return socket.emit("scan", {
+        username: window.uname
+      });
+    } else if (cloak) {
+      return socket.emit("cloak", {
         username: window.uname
       });
     }

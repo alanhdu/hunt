@@ -21,13 +21,11 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-
+from gevent import monkey
+monkey.patch_all()
 
 import os
 import sys
-
-from gevent import monkey
-monkey.patch_all()
 
 from socketio import socketio_manage
 from socketio.server import SocketIOServer
@@ -36,6 +34,7 @@ from flask import request, session, json
 from werkzeug.debug import DebuggedApplication
 from werkzeug.serving import run_with_reloader
 from werkzeug._internal import _log
+
 
 
 class SocketIOMiddleware(object):
@@ -58,16 +57,15 @@ class SocketIOMiddleware(object):
 
 
 class SocketIO(object):
-    def __init__(self, app=None, exception_handler=None):
+    def __init__(self, app=None):
         if app:
             self.init_app(app)
         self.messages = {}
         self.rooms = {}
         self.server = None
 
-        self.exception_handler = exception_handler
-        if exception_handler is not None and not callable(exception_handler):
-            raise ValueError("exception_handler must be callable")
+        self.exception_handlers = {}
+        self.default_exception_handler = None
 
     def init_app(self, app):
         app.wsgi_app = SocketIOMiddleware(app, self)
@@ -149,7 +147,7 @@ class SocketIO(object):
                     return request.namespace.base_send(message, json, callback)
                 return request.namespace.socket[ns_name].base_send(message, json, callback)
 
-        namespaces = {ns_name: GenericNamespace for ns_name in self.messages}
+        namespaces = dict( (ns_name, GenericNamespace) for ns_name in self.messages)
         return namespaces
 
     def _dispatch_message(self, app, namespace, message, args=[]):
@@ -189,32 +187,45 @@ class SocketIO(object):
                     return True
         return False
 
-    def on_message(self, message, handler, ns_name=""):
-        if ns_name not in self.messages:
-            self.messages[ns_name] = {}
-        self.messages[ns_name][message] = handler
+    def on_message(self, message, handler, namespace=''):
+        if namespace not in self.messages:
+            self.messages[namespace] = {}
+        self.messages[namespace][message] = handler
 
-    def on(self, message, ns_name=""):
-        if self.exception_handler is not None:
+    def on(self, message, namespace=''):
+        if namespace in self.exception_handlers or self.default_exception_handler is not None:
             def decorator(f):
                 def func(*args, **kwargs):
                     try:
                         f(*args, **kwargs)
                     except:
-                        print sys.exc_info()
-                        self.exception_handler(*sys.exc_info(), ns_name=ns_name)
-
-                self.on_message(message, func, ns_name) 
+                        handler = self.exception_handlers.get(namespace,
+                                                              self.default_exception_handler)
+                        type, value, traceback = sys.exc_info()
+                        handler(value)
+                self.on_message(message, func, namespace)
                 return func
         else:
             def decorator(f):
-                self.on_message(message, f, ns_name) 
+                self.on_message(message, f, namespace)
                 return f
+        return decorator
+
+    def on_error(self, namespace=''):
+        def decorator(exception_handler):
+            if not callable(exception_handler):
+                raise ValueError('exception_handler must be callable')
+            self.exception_handlers[namespace] = exception_handler
 
         return decorator
 
+    def on_error_default(self, exception_handler):
+        if not callable(exception_handler):
+            raise ValueError('exception_handler must be callable')
+        self.default_exception_handler = exception_handler
+
     def emit(self, event, *args, **kwargs):
-        ns_name = kwargs.pop('namespace', "")
+        ns_name = kwargs.pop('namespace', '')
         room = kwargs.pop('room', None)
         if room is not None:
             for client in self.rooms.get(ns_name, {}).get(room, set()):
@@ -259,7 +270,6 @@ class SocketIO(object):
             run_with_reloader(run_server)
         else:
             self.server.serve_forever()
-
 
 def emit(event, *args, **kwargs):
     return request.namespace.emit(event, *args, **kwargs)
