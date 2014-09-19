@@ -4,7 +4,13 @@
     for key in ["health", "ammo", "msg", "arena"]
         if key of info
             document.getElementById(key).innerHTML = escape(info[key])
+
     null
+
+@clear = () ->
+    for key in ["health", "ammo", "msg", "arena", "scores"]
+        document.getElementById(key).innerHTML = ""
+
 
 getScoreboard = (scores) ->
     unameLength = "Username".length

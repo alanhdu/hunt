@@ -15,6 +15,17 @@
     return null;
   };
 
+  this.clear = function() {
+    var key, _i, _len, _ref, _results;
+    _ref = ["health", "ammo", "msg", "arena", "scores"];
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      key = _ref[_i];
+      _results.push(document.getElementById(key).innerHTML = "");
+    }
+    return _results;
+  };
+
   getScoreboard = function(scores) {
     var key, len, map, stat, statLengths, stats, uname, unameLength, _ref;
     unameLength = "Username".length;
