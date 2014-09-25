@@ -32,7 +32,6 @@ getScoreboard = (scores) ->
     for uname, stats of scores
         uname = pad(uname, unameLength)
         stats = (pad(stats[key], len) for key, len of statLengths).join("|")
-        console.log(pad("Username", unameLength).length)
         map += "\n#{uname}|#{stats}"
 
     return escape(map)

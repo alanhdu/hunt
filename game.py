@@ -1,5 +1,6 @@
 from __future__ import division
-from collections import namedtuple, deque, defaultdict
+from collections import namedtuple, deque
+import settings
 from decimal import *
 
 import numpy as np
@@ -63,16 +64,16 @@ def move(p, direction):
 Point = namedtuple("Point", ["y", "x"])
 Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
 
-speed = defaultdict(int, {"move": 4})
-damage = {"bullet": 5, "stab": 2}
 
 class Game(object):
-    def __init__(self, w=51, h=23, debug=False):
+    def __init__(self, settings=settings.default, debug=False):
+        w, h = settings.w, settings.h
+        self.settings = settings
         self.players = {} 
         self.bullets = []
 
         start = -np.zeros((h+2, w+2), dtype=bool)
-        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.8
+        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.9
         for i in xrange(200):
             start = rule1234_3(start)
         self.arena = np.array([["*" if x else " " for x in y]
@@ -96,23 +97,24 @@ class Game(object):
             player.update()
 
         # Update bullet movements
-        for bullet in self.bullets:
-            self.arena[bullet.pos] = " "
-
-        bullets = [Bullet(move(bullet.pos, bullet.direction), 
-                          bullet.direction, bullet.source)
-                   for bullet in self.bullets
-                   if self.inArena(move(bullet.pos, bullet.direction))]
-        self.bullets = []
-        for bullet in bullets:
-            if self.arena[bullet.pos] == " ":
-                self.arena[bullet.pos] = ":"
-                self.bullets.append(bullet)
-            elif self.arena[bullet.pos] == "*":
+        for i in xrange(self.settings.pace):
+            for bullet in self.bullets:
                 self.arena[bullet.pos] = " "
-            elif self.arena[bullet.pos] in "<>v^":
-                player = self.findPlayer(bullet.pos)
-                player.hit(bullet.source, "bullet")
+
+            bullets = [Bullet(move(bullet.pos, bullet.direction), 
+                              bullet.direction, bullet.source)
+                       for bullet in self.bullets
+                       if self.inArena(move(bullet.pos, bullet.direction))]
+            self.bullets = []
+            for bullet in bullets:
+                if self.arena[bullet.pos] == " ":
+                    self.arena[bullet.pos] = ":"
+                    self.bullets.append(bullet)
+                elif self.arena[bullet.pos] == "*":
+                    self.arena[bullet.pos] = " "
+                elif self.arena[bullet.pos] in "<>v^":
+                    player = self.findPlayer(bullet.pos)
+                    player.hit(bullet.source, "bullet")
         # Update scores
         for player in self.players.itervalues():
             player.updateScore()
@@ -232,18 +234,18 @@ class Player(object):
         self.msg = None
         if self.actions:
             func, args, kwargs = self.actions.popleft()
-            if func == "move" and self.lastActionTime >= speed["move"]:
+            if func == "move" and self.lastActionTime >= self.game.settings.speed["move"]:
                 self.move(*args, **kwargs)
-                self.lastActionTime = 0
-            elif func == "move":
-                self.lastActionTime += 1
-                self.actions.appendleft( (func, args, kwargs) )
-            elif func == "turn" and self.lastActionTime >= speed["turn"]:
-                self.lastActionTime += 1
-                self.turn(*args, **kwargs)
-            elif func == "fire" and self.lastActionTime >= speed["fire"]:
-                self.lastActionTime += 1
-                self.fire(*args, **kwargs)
+                self.lastActionTime = 1
+            else:
+                if func == "move":
+                    self.queue(func, *args, **kwargs)
+                elif func == "turn" and self.lastActionTime >= self.game.settings.speed["turn"]:
+                    self.turn(*args, **kwargs)
+                elif func == "fire" and self.lastActionTime >= self.game.settings.speed["fire"]:
+                    self.fire(*args, **kwargs)
+
+                self.lastActionTime += self.game.settings.pace
         else:
             self.lastActionTime += 1
 
@@ -302,7 +304,7 @@ class Player(object):
             self.msg = "{src} stabbed you".format(src=src.name)
             src.msg = "You stabbed {target}".format(target=self.name)
 
-        self.health -= damage[method]
+        self.health -= self.game.settings.damage[method]
         if self.health <= 0:
             self.msg = "{src} killed you".format(src=src.name)
             src.msg = "You killed {target}".format(target=self.name)
