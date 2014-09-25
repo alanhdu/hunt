@@ -223,6 +223,7 @@ class Player(object):
                             mask[2:,   :-2] + mask[2:,  1:-1] + mask[2:,   2:])
 
         # Flip so True -> Masked & Invisible
+        self.currentView = -mask
         self.view.mask *= -mask
 
     def queue(self, action, *args, **kwargs):
@@ -321,14 +322,21 @@ class Player(object):
 
     def updateScore(self):
         # use Decimal to avoid annoying scores like 0.000000000001
-        self.score = Decimal('0.998') * self.score + self.currentScore
+        self.score = Decimal('0.9998') * self.score + self.currentScore
         self.currentScore = 0
+
+    def getView(self, x, y):
+        c = self.game.getType(x, y)
+        if not self.currentView[y, x]:
+            return c
+        elif not self.view.mask[y, x] and c in "+-| ":  # walls of arena
+            return c
+        else:
+            return " "
 
     def __str__(self):
         h, w = self.view.shape
-        s = "\n".join("".join(  self.game.getType(x, y) 
-                                if not self.view.mask[y, x]
-                                else " "
+        s = "\n".join("".join(self.getView(x, y)
                               for x in xrange(w))
                       for y in xrange(h))
         return s

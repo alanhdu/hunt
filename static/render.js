@@ -70,7 +70,6 @@
         }
         return _results;
       })()).join("|");
-      console.log(pad("Username", unameLength).length);
       map += "\n" + uname + "|" + stats;
     }
     return escape(map);
