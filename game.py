@@ -343,6 +343,7 @@ class Player(object):
 
     def to_json(self):
         d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
+             "x": self.pos.x, "y": self.pos.y,
              "scores": {name: {"kills":player.kills, "deaths":player.deaths,
                                "score":round(player.score, 3)}      # 3 decimal points of score
                         for name, player in self.game.players.iteritems()}}

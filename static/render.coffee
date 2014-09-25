@@ -1,7 +1,8 @@
 @update = (info) ->
     document.getElementById("scores").innerHTML = getScoreboard(info["scores"])
+    document.getElementById("arena").innerHTML = displayArena(info["arena"], info["x"], info["y"])
 
-    for key in ["health", "ammo", "msg", "arena"]
+    for key in ["health", "ammo", "msg"]
         if key of info
             document.getElementById(key).innerHTML = escape(info[key])
 
@@ -10,6 +11,35 @@
 @clear = () ->
     for key in ["health", "ammo", "msg", "arena", "scores"]
         document.getElementById(key).innerHTML = ""
+
+displayArena = (arena, curX, curY) ->
+    x = 0
+    y = 0
+    str = ""
+    for char in arena
+        s = switch char
+                when '\n' then "<br/>"
+                when ' ' then "&nbsp;"
+                when '>' then "&gt;"
+                when '<' then "&lt;"
+                when '"' then "&quot;"
+                when '&' then "&amp;"
+                else char
+
+
+        if x == curX and y == curY
+            str += "<span id='highlight'>" + s + "</span id='highlight'>"
+        else
+            str += s
+
+        if char == '\n'
+            y += 1
+            x = 0
+        else
+            x += 1
+
+    return str
+
 
 
 getScoreboard = (scores) ->

@@ -1,8 +1,23 @@
+@font-face {
+    font-family: square;
+    src: url("/static/fonts/square.ttf");
+}
+
 body {
     background-color: #000000;
-    font-family: monospace;
     color: #FFFFFF;
+    font-family: monospace;
+}
+
+#arena {
+    font-family: square, monospace;
     text-align:center;
+    font-size: 2vmin;
+}
+
+#highlight {
+    background-color: #FFF;
+    color: #000;
 }
 
 .content {
