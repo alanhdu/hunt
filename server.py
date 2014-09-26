@@ -3,7 +3,7 @@ import glob
 
 import gevent
 from flask import Flask, render_template, copy_current_request_context, request
-from sockets import SocketIO, join_room, emit
+from flask.ext.socketio import SocketIO, emit, join_room
 from socketio.namespace import BaseNamespace
 
 import game
