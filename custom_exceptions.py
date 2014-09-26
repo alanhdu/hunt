@@ -1,5 +1,4 @@
-import sockets 
-from sockets import emit
+from flask.ext.socketio import emit
 
 
 def exception_handler(exception, value, traceback, ns_name=""):
