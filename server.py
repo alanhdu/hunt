@@ -81,6 +81,6 @@ def scan(msg):
     m.players[user].cloak = not m.players[user].cloak
 
 if __name__ == "__main__":
-    for path in glob.glob("static/*.coffee"):
+    for path in glob.glob("static/js/*.coffee"):
         subprocess.call(["coffee", "-c", path])
     socketio.run(app, port=8080)
