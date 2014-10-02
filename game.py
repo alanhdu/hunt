@@ -63,14 +63,14 @@ def move(p, direction):
 
 Point = namedtuple("Point", ["y", "x"])
 Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
-
+Bomb = namedtuple("Bomb", ["pos", "direction", "source"])
 
 class Game(object):
     def __init__(self, settings=settings.default, debug=False):
         w, h = settings.w, settings.h
         self.settings = settings
         self.players = {} 
-        self.bullets = []
+        self.bullets, self.bombs = [], []
 
         start = -np.zeros((h+2, w+2), dtype=bool)
         start[1:-1, 1:-1] = np.random.rand(h, w) > 0.9
@@ -92,13 +92,19 @@ class Game(object):
                 return player
 
     def update(self):
+        # clear explosions
+        height, width = self.arena.shape
+        for x in xrange(width):
+            for y in xrange(height):
+                if self.arena[y, x] == "#":
+                    self.arena[y, x] = " "
+
         # Update player movements
         for player in self.players.itervalues():
             player.update()
 
-        # Update bullet movements
         for i in xrange(self.settings.pace):
-            for bullet in self.bullets:
+            for bullet in self.bullets:     # update bullets
                 self.arena[bullet.pos] = " "
 
             bullets = [Bullet(move(bullet.pos, bullet.direction), 
@@ -107,18 +113,47 @@ class Game(object):
                        if self.inArena(move(bullet.pos, bullet.direction))]
             self.bullets = []
             for bullet in bullets:
-                if self.arena[bullet.pos] == " ":
-                    self.arena[bullet.pos] = ":"
-                    self.bullets.append(bullet)
-                elif self.arena[bullet.pos] == "*":
-                    self.arena[bullet.pos] = " "
-                elif self.arena[bullet.pos] in "<>v^":
-                    player = self.findPlayer(bullet.pos)
-                    player.hit(bullet.source, "bullet")
+                self.updateBullet(bullet)
+
+            for bullet in self.bombs:       # update bombs
+                self.arena[bullet.pos] = " "
+
+            bombs = [Bomb(move(bomb.pos, bomb.direction), 
+                          bomb.direction, bomb.source)
+                       for bomb in self.bombs
+                       if self.inArena(move(bomb.pos, bomb.direction))]
+            self.bombs = []
+            for bomb in bombs:
+                self.updateBomb(bomb)
+
         # Update scores
         for player in self.players.itervalues():
             player.updateScore()
 
+    def updateBullet(self, bullet):
+        if self.arena[bullet.pos] == " ":
+            self.arena[bullet.pos] = ":"
+            self.bullets.append(bullet)
+        elif self.arena[bullet.pos] == "*":
+            self.arena[bullet.pos] = " "
+        elif self.arena[bullet.pos] in "<>v^":
+            player = self.findPlayer(bullet.pos)
+            player.hit(bullet.source, "bullet")
+
+    def updateBomb(self, bomb):
+        if self.arena[bomb.pos] == " ":
+            self.arena[bomb.pos] = "o"
+            self.bombs.append(bomb)
+        elif self.arena[bomb.pos] in "<>v^*":     # explode!
+            y, x = bomb.pos
+
+            cs = self.arena[y-1:y+2, x-1:x+2]
+            for player in self.players.values():
+                py, px = player.pos
+                if (y-1 <= py <= y+1) and (x-1 <= px <= x+1):
+                    player.hit(bomb.source, "bomb")
+            cs[:] = "#"
+    
     def __str__(self):
         height, width = self.arena.shape
         return  "\n".join("".join(self.getType(x, y) 
@@ -245,6 +280,8 @@ class Player(object):
                     self.turn(*args, **kwargs)
                 elif func == "fire" and self.lastActionTime >= self.game.settings.speed["fire"]:
                     self.fire(*args, **kwargs)
+                elif func == "bomb" and self.lastActionTime >= self.game.settings.speed["fire"]:
+                    self.bomb(*args, **kwargs)
 
                 self.lastActionTime += self.game.settings.pace
         else:
@@ -285,16 +322,20 @@ class Player(object):
             if self.ammo > 0:
                 bullet = Bullet(pos, self.facing, self)
                 self.ammo -= 1
-                if self.game.arena[bullet.pos] == " ":
-                    self.game.bullets.append(bullet)
-                    self.game.arena[bullet.pos] = ":"
-                elif self.game.arena[bullet.pos] == "*":
-                    self.game.arena[bullet.pos] = " "
-                elif self.game.arena[bullet.pos] in "v^<>": # Direct hit
-                    other = self.game.findPlayer(bullet.pos)
-                    other.hit(self, "bullet")
+                self.game.updateBullet(bullet)
             else:
                 self.msg = "You are out of ammo"
+
+    def bomb(self):
+        pos = move(self.pos, self.facing)
+        if self.game.inArena(pos):
+            if self.ammo >= self.game.settings.ammo["bomb"]:
+                bomb = Bomb(pos, self.facing, self)
+                self.ammo -= self.game.settings.ammo["bomb"]
+                self.game.updateBomb(bomb)
+            else:
+                self.msg = "You don't have enough ammo for a bomb"
+            
 
 
     def hit(self, src, method):
@@ -304,6 +345,9 @@ class Player(object):
         elif method == "stab":
             self.msg = "{src} stabbed you".format(src=src.name)
             src.msg = "You stabbed {target}".format(target=self.name)
+        elif method == "bomb":
+            self.msg = "{src} hit you with a bomb".format(src=src.name)
+            src.msg = "You hit {target} with a bomb".format(target=self.name)
 
         self.health -= self.game.settings.damage[method]
         if self.health <= 0:

@@ -85,7 +85,12 @@
         username: window.uname
       });
     } else if (fire) {
-      return socket.emit("fire", {
+      if (evt.shiftKey) {
+        type = "bomb";
+      } else {
+        type = "fire";
+      }
+      return socket.emit(type, {
         username: window.uname
       });
     } else if (scan) {
