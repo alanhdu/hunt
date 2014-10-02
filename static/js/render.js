@@ -34,24 +34,7 @@
     str = "";
     for (_i = 0, _len = arena.length; _i < _len; _i++) {
       char = arena[_i];
-      s = (function() {
-        switch (char) {
-          case '\n':
-            return "<br/>";
-          case ' ':
-            return "&nbsp;";
-          case '>':
-            return "&gt;";
-          case '<':
-            return "&lt;";
-          case '"':
-            return "&quot;";
-          case '&':
-            return "&amp;";
-          default:
-            return char;
-        }
-      })();
+      s = escape(char);
       if (x === curX && y === curY) {
         str += "<span id='highlight'>" + s + "</span id='highlight'>";
       } else {
@@ -68,7 +51,7 @@
   };
 
   getScoreboard = function(scores) {
-    var key, len, map, stat, statLengths, stats, uname, unameLength, _ref;
+    var key, len, map, stat, statLengths, stats, uname, unameLength, xp, _ref;
     unameLength = "Username".length;
     statLengths = {};
     _ref = scores[window.uname];
@@ -89,25 +72,26 @@
         }
       }
     }
-    map = pad("Username", unameLength) + "|" + ((function() {
+    xp = 2;
+    map = pad("Username", unameLength + xp) + "|" + ((function() {
       var _results;
       _results = [];
       for (key in statLengths) {
         len = statLengths[key];
-        _results.push(pad(key, len));
+        _results.push(pad(key, len + xp));
       }
       return _results;
     })()).join("|");
     map += "\n" + Array(map.length + 1).join("-");
     for (uname in scores) {
       stats = scores[uname];
-      uname = pad(uname, unameLength);
+      uname = pad(uname, unameLength + xp);
       stats = ((function() {
         var _results;
         _results = [];
         for (key in statLengths) {
           len = statLengths[key];
-          _results.push(pad(stats[key], len));
+          _results.push(pad(stats[key], len + xp));
         }
         return _results;
       })()).join("|");
@@ -117,8 +101,11 @@
   };
 
   pad = function(str, len) {
+    var left, right;
     str = String(str);
-    str += Array(len - str.length + 1).join(" ");
+    left = Math.floor((len - str.length) / 2) + 1;
+    right = Math.ceil((len - str.length) / 2) + 1;
+    str = Array(left).join(" ") + str + Array(right).join(" ");
     return str;
   };
 

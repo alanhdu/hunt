@@ -17,15 +17,7 @@ displayArena = (arena, curX, curY) ->
     y = 0
     str = ""
     for char in arena
-        s = switch char
-                when '\n' then "<br/>"
-                when ' ' then "&nbsp;"
-                when '>' then "&gt;"
-                when '<' then "&lt;"
-                when '"' then "&quot;"
-                when '&' then "&amp;"
-                else char
-
+        s = escape(char)
 
         if x == curX and y == curY
             str += "<span id='highlight'>" + s + "</span id='highlight'>"
@@ -56,19 +48,22 @@ getScoreboard = (scores) ->
             if key not of statLengths or stat.length > statLengths[key]
                 statLengths[key] = stat.length
 
-    map = pad("Username", unameLength) + "|" + (pad(key, len) for key, len of statLengths).join("|")
+    xp = 2
+    map = pad("Username", unameLength + xp) + "|" + (pad(key, len + xp) for key, len of statLengths).join("|")
     map += "\n" + Array(map.length + 1).join("-")
 
     for uname, stats of scores
-        uname = pad(uname, unameLength)
-        stats = (pad(stats[key], len) for key, len of statLengths).join("|")
+        uname = pad(uname, unameLength + xp)
+        stats = (pad(stats[key], len + xp) for key, len of statLengths).join("|")
         map += "\n#{uname}|#{stats}"
 
     return escape(map)
 
 pad = (str, len) ->
     str = String(str)
-    str += Array(len - str.length + 1).join(" ")
+    left = Math.floor((len - str.length) / 2) + 1
+    right = Math.ceil((len - str.length) / 2) + 1
+    str = Array(left).join(" ") + str + Array(right).join(" ")
     return str
 
 escape = (str) ->
