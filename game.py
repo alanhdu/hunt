@@ -25,7 +25,7 @@ def rule1234_3(grid):
 def debugMaze():
     maze = """\
 *****************************************************
-*                                                   *
+*                        *                          *
 *                        *                          *
 *                        *                          *
 *                        *                          *
@@ -99,9 +99,6 @@ class Game(object):
                 if self.arena[y, x] == "#":
                     self.arena[y, x] = " "
 
-        # Update player movements
-        for player in self.players.itervalues():
-            player.update()
 
         for i in xrange(self.settings.pace):
             for bullet in self.bullets:     # update bullets
@@ -120,11 +117,14 @@ class Game(object):
 
             bombs = [Bomb(move(bomb.pos, bomb.direction), 
                           bomb.direction, bomb.source)
-                       for bomb in self.bombs
-                       if self.inArena(move(bomb.pos, bomb.direction))]
+                       for bomb in self.bombs]  # let bomb hit edge and explode
             self.bombs = []
             for bomb in bombs:
                 self.updateBomb(bomb)
+
+        # Update player movements
+        for player in self.players.itervalues():
+            player.update()
 
         # Update scores
         for player in self.players.itervalues():
@@ -145,15 +145,23 @@ class Game(object):
         if self.arena[bomb.pos] == " ":
             self.arena[bomb.pos] = "o"
             self.bombs.append(bomb)
-        elif self.arena[bomb.pos] in "<>v^*":     # explode!
+        elif self.arena[bomb.pos] in "#<>v^*":     # explode!
             y, x = bomb.pos
-
-            cs = self.arena[y-1:y+2, x-1:x+2]
 
             for player in self.players.values():
                 py, px = player.pos
-                if (y-1 <= py <= y+1) and (x-1 <= px <= x+1):
+                if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
                     player.hit(bomb.source, "bomb")
+
+            # prevent things from clearing the edges
+            h, w = self.arena.shape
+            y_low = max(y - 1, 1)
+            y_high = min(y + 2, h - 1)
+
+            x_low = max(x - 1, 1)
+            x_high = min(x + 2, w - 1)
+            
+            cs = self.arena[y_low:y_high, x_low:x_high]
             cs[:] = "#"
     
     def __str__(self):
@@ -319,30 +327,45 @@ class Player(object):
 
 
     def hit(self, src, method):
-        if method == "bullet":
-            self.msg = "{src} hit you with a bullet".format(src=src.name)
-            src.msg = "You hit {target} with a bullet".format(target=self.name)
-        elif method == "stab":
-            self.msg = "{src} stabbed you".format(src=src.name)
-            src.msg = "You stabbed {target}".format(target=self.name)
-        elif method == "bomb":
-            self.msg = "{src} hit you with a bomb".format(src=src.name)
-            src.msg = "You hit {target} with a bomb".format(target=self.name)
-
         self.health -= self.game.settings.damage[method]
-        if self.health <= 0:
-            self.msg = "{src} killed you".format(src=src.name)
-            src.msg = "You killed {target}".format(target=self.name)
+        if src is self:
+            if method == "bullet":
+                self.msg = "You hit yourself with a bullet"
+            elif method == "bomb":
+                self.msg = "You hit yourself with a bomb"
+            elif method == "stab":
+                self.msg = "You managed to stab yourself. That shouldn't be possible"
 
-            src.health += 2     #generate health
-            src.kills += 1
-            self.deaths += 1
+            if self.health <= 0:
+                self.msg = "You commited suicide!"
+                self.kills += 1
+                self.deaths += 1
+                self.currentScore -= 5
+                self.rebirth()
+        else:
+            if method == "bullet":
+                self.msg = "{src} hit you with a bullet".format(src=src.name)
+                src.msg = "You hit {target} with a bullet".format(target=self.name)
+            elif method == "stab":
+                self.msg = "{src} stabbed you".format(src=src.name)
+                src.msg = "You stabbed {target}".format(target=self.name)
+            elif method == "bomb":
+                self.msg = "{src} hit you with a bomb".format(src=src.name)
+                src.msg = "You hit {target} with a bomb".format(target=self.name)
 
-            self.currentScore -= 1
-            src.currentScore += 1
+            if self.health <= 0:
+                self.msg = "{src} killed you".format(src=src.name)
+                src.msg = "You killed {target}".format(target=self.name)
 
-            self.game.arena[self.pos] = " "
-            self.rebirth()
+                src.health += 2     #generate health
+                src.kills += 1
+                self.deaths += 1
+
+                self.currentScore -= 1
+                src.currentScore += 1
+
+                self.game.arena[self.pos] = " "
+                self.rebirth()
 
     def updateScore(self):
         # use Decimal to avoid annoying scores like 0.000000000001
