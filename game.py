@@ -62,15 +62,15 @@ def move(p, direction):
         return Point(x=p.x, y=p.y+1)
 
 Point = namedtuple("Point", ["y", "x"])
-Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
-Bomb = namedtuple("Bomb", ["pos", "direction", "source"])
+
+Projectile = namedtuple("Projectile", ["pos", "direction", "source", "type"])
 
 class Game(object):
     def __init__(self, settings=settings.default, debug=False):
         w, h = settings.w, settings.h
         self.settings = settings
         self.players = {} 
-        self.bullets, self.bombs = [], []
+        self.projectiles = []
 
         start = -np.zeros((h+2, w+2), dtype=bool)
         start[1:-1, 1:-1] = np.random.rand(h, w) > 0.9
@@ -101,26 +101,15 @@ class Game(object):
 
 
         for i in xrange(self.settings.pace):
-            for bullet in self.bullets:     # update bullets
-                self.arena[bullet.pos] = " "
+            for proj in self.projectiles:   # update bullets
+                self.arena[proj.pos] = " "
 
-            bullets = [Bullet(move(bullet.pos, bullet.direction), 
-                              bullet.direction, bullet.source)
-                       for bullet in self.bullets
-                       if self.inArena(move(bullet.pos, bullet.direction))]
-            self.bullets = []
-            for bullet in bullets:
-                self.updateBullet(bullet)
-
-            for bullet in self.bombs:       # update bombs
-                self.arena[bullet.pos] = " "
-
-            bombs = [Bomb(move(bomb.pos, bomb.direction), 
-                          bomb.direction, bomb.source)
-                       for bomb in self.bombs]  # let bomb hit edge and explode
-            self.bombs = []
-            for bomb in bombs:
-                self.updateBomb(bomb)
+            projectiles = [Projectile(move(proj.pos, proj.direction), 
+                                      proj.direction, proj.source, proj.type)
+                           for proj in self.projectiles]
+            self.projectiles = []
+            for proj in projectiles:
+                self.updateProjectile(proj)
 
         # Update player movements
         for player in self.players.itervalues():
@@ -131,27 +120,24 @@ class Game(object):
             player.updateScore()
             player.updateMask()
 
-    def updateBullet(self, bullet):
-        if self.arena[bullet.pos] == " ":
-            self.arena[bullet.pos] = ":"
-            self.bullets.append(bullet)
-        elif self.arena[bullet.pos] == "*":
-            self.arena[bullet.pos] = " "
-        elif self.arena[bullet.pos] in "<>v^":
-            player = self.findPlayer(bullet.pos)
-            player.hit(bullet.source, "bullet")
-
-    def updateBomb(self, bomb):
-        if self.arena[bomb.pos] == " ":
-            self.arena[bomb.pos] = "o"
-            self.bombs.append(bomb)
-        elif self.arena[bomb.pos] in "#<>v^*":     # explode!
-            y, x = bomb.pos
+    def updateProjectile(self, proj):
+        render = {"bullet":":", "bomb": "o"}
+        if self.arena[proj.pos] == " " and self.inArena(proj.pos):
+            self.arena[proj.pos] = render[proj.type]
+            self.projectiles.append(proj)
+        elif proj.type == "bullet":
+            if self.arena[proj.pos] == "*":
+                self.arena[proj.pos] = " "
+            elif self.arena[proj.pos] in "<>v^":
+                player = self.findPlayer(proj.pos)
+                player.hit(bullet.source, proj.type)
+        elif proj.type == "bomb" and self.arena[proj.pos] in "#<>v^*":  #explode!
+            y, x = proj.pos
 
             for player in self.players.values():
                 py, px = player.pos
                 if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
-                    player.hit(bomb.source, "bomb")
+                    player.hit(proj.source, proj.type)
 
             # prevent things from clearing the edges
             h, w = self.arena.shape
@@ -267,9 +253,9 @@ class Player(object):
                 elif func == "turn" and self.lastActionTime >= self.game.settings.speed["turn"]:
                     self.turn(*args, **kwargs)
                 elif func == "fire" and self.lastActionTime >= self.game.settings.speed["fire"]:
-                    self.fire(*args, **kwargs)
+                    self.fire(*args, type="bullet", **kwargs)
                 elif func == "bomb" and self.lastActionTime >= self.game.settings.speed["fire"]:
-                    self.bomb(*args, **kwargs)
+                    self.fire(*args, type="bomb", **kwargs)
 
                 self.lastActionTime += self.game.settings.pace
         else:
@@ -304,27 +290,15 @@ class Player(object):
         self.updateMask()
         self.game.arena[self.pos] = self.facing
 
-    def fire(self):
+    def fire(self, type):
         pos = move(self.pos, self.facing)
         if self.game.inArena(pos):
-            if self.ammo > 0:
-                bullet = Bullet(pos, self.facing, self)
-                self.ammo -= 1
-                self.game.updateBullet(bullet)
+            if self.ammo > self.game.settings.ammo[type]:
+                proj = Projectile(pos, self.facing, self, type)
+                self.ammo -= self.game.settings.ammo[type]
+                self.game.updateProjectile(proj)
             else:
-                self.msg = "You are out of ammo"
-
-    def bomb(self):
-        pos = move(self.pos, self.facing)
-        if self.game.inArena(pos):
-            if self.ammo >= self.game.settings.ammo["bomb"]:
-                bomb = Bomb(pos, self.facing, self)
-                self.ammo -= self.game.settings.ammo["bomb"]
-                self.game.updateBomb(bomb)
-            else:
-                self.msg = "You don't have enough ammo for a bomb"
-            
-
+                self.msg = "You don't have enough ammo for a {}".format(type)
 
     def hit(self, src, method):
         self.health -= self.game.settings.damage[method]
