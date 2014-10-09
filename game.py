@@ -99,7 +99,6 @@ class Game(object):
                 if self.arena[y, x] == "#":
                     self.arena[y, x] = " "
 
-
         for i in xrange(self.settings.pace):
             for proj in self.projectiles:   # update bullets
                 self.arena[proj.pos] = " "
@@ -119,6 +118,14 @@ class Game(object):
         for player in self.players.itervalues():
             player.updateScore()
             player.updateMask()
+
+        # regenerate recharges
+        while len(self.players) > (self.arena == 'A').sum():
+            h, w = self.arena.shape
+            y, x = np.random.randint(0, h), np.random.randint(0, w)
+            while self.arena[y, x] != " ":
+                y, x = np.random.randint(0, h), np.random.randint(0, w)
+            self.arena[y, x] = "A"
 
     def updateProjectile(self, proj):
         render = {"bullet":":", "bomb": "o"}
@@ -278,6 +285,10 @@ class Player(object):
             if self.game.arena[p] == " ":
                 self.pos = p
                 self.updateMask()
+            if self.game.arena[p] == "A":
+                self.ammo += self.game.settings.ammo["recharge"]
+                self.pos = p
+                self.updateMask()
             elif self.game.arena[p] in "<>v^" and direction == self.facing:
                 # if we're facing someone and move into them, stab
                 other = self.game.findPlayer(p)
@@ -293,7 +304,7 @@ class Player(object):
     def fire(self, type):
         pos = move(self.pos, self.facing)
         if self.game.inArena(pos):
-            if self.ammo > self.game.settings.ammo[type]:
+            if self.ammo >= self.game.settings.ammo[type]:
                 proj = Projectile(pos, self.facing, self, type)
                 self.ammo -= self.game.settings.ammo[type]
                 self.game.updateProjectile(proj)
