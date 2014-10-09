@@ -129,6 +129,7 @@ class Game(object):
         # Update scores
         for player in self.players.itervalues():
             player.updateScore()
+            player.updateMask()
 
     def updateBullet(self, bullet):
         if self.arena[bullet.pos] == " ":
@@ -148,6 +149,7 @@ class Game(object):
             y, x = bomb.pos
 
             cs = self.arena[y-1:y+2, x-1:x+2]
+
             for player in self.players.values():
                 py, px = player.pos
                 if (y-1 <= py <= y+1) and (x-1 <= px <= x+1):
@@ -156,42 +158,12 @@ class Game(object):
     
     def __str__(self):
         height, width = self.arena.shape
-        return  "\n".join("".join(self.getType(x, y) 
+        return  "\n".join("".join(self.arena[y, x]
                                   for x in xrange(width))
                           for y in xrange(height))
     def inArena(self, p):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
         return all(0 < a < b - 1 for a, b in zip(p, self.arena.shape))
-    def getType(self, x, y):
-        if self.arena[y, x] != "*":
-            return self.arena[y, x]
-
-        top    = self.isStar(x, y - 1)
-        bottom = self.isStar(x, y + 1)
-        left   = self.isStar(x - 1, y)
-        right  = self.isStar(x + 1, y)
-
-        dash = left or right
-        pipe = top or bottom
-
-        if dash and pipe:
-            return "+"
-        elif dash:
-            return "-"
-        elif pipe:
-            return "|"
-        else:
-            return "+"
-
-    def isStar(self, x, y):
-        if (x < 0 or y < 0):
-            return False
-        try:
-            c = self.arena[y, x]
-        except IndexError:
-            return False
-        return c == "*"
-
 
 class Player(object):
     def __init__(self, game, name):
@@ -235,14 +207,21 @@ class Player(object):
 
         mask = np.zeros(self.game.arena.shape, dtype=bool)
 
+        def stopper(array):
+            b = np.zeros(array.shape, dtype=bool)
+            for stop in "*v^<>":
+                b += (array == stop)
+                pass
+            return array == "*" 
+
         if self.facing != "v":
-            mask[:y, x] = ((col[y - 1::-1] == "*").cumsum() == 0)[::-1]
+            mask[:y, x] = (stopper(col[y - 1::-1]).cumsum() == 0)[::-1]
         if self.facing != "^":
-            mask[y+1:, x] = ((col[y + 1:] == "*").cumsum() == 0)
+            mask[y+1:, x] = stopper(col[y + 1:]).cumsum() == 0
         if self.facing != ">":
-            mask[y, :x] = ((row[x - 1::-1] == "*").cumsum() == 0)[::-1]
+            mask[y, :x] = (stopper(row[x - 1::-1]).cumsum() == 0)[::-1]
         if self.facing != "<":
-            mask[y, x+1:] = ((row[x + 1:] == "*").cumsum() == 0)
+            mask[y, x+1:] = stopper(row[x + 1:]).cumsum() == 0
 
         mask[y, x] = True
 
@@ -267,6 +246,7 @@ class Player(object):
         self.actions.append((action, args, kwargs))
 
     def update(self):
+        self.game.arena[self.pos] = self.facing
         self.msg = None
         if self.actions:
             func, args, kwargs = self.actions.popleft()
@@ -370,10 +350,10 @@ class Player(object):
         self.currentScore = 0
 
     def getView(self, x, y):
-        c = self.game.getType(x, y)
+        c = self.game.arena[y, x]
         if not self.currentView[y, x]:
             return c
-        elif not self.view.mask[y, x] and c in "+-| ":  # walls of arena
+        elif not self.view.mask[y, x] and c == "*":  # walls of arena
             return c
         else:
             return " "

@@ -17,21 +17,71 @@ displayArena = (arena, curX, curY) ->
     y = 0
     str = ""
     for char in arena
-        s = escape(char)
+        s = getType(char, arena, x, y)
 
         if x == curX and y == curY
             str += "<span id='highlight'>" + s + "</span id='highlight'>"
         else
             str += s
-
         if char == '\n'
             y += 1
             x = 0
         else
             x += 1
-
     return str
 
+getType = (char, arena, x , y) ->
+    if char isnt "#" and char isnt "*"
+        return escape(char)
+
+    height = (arena.split("\n").length)
+    width = (arena.length - height + 1) / height
+    pos = y * (width + 1) + x
+    top = pos - width - 1
+    bot = pos + width + 1
+    left = pos - 1
+    right = pos + 1
+
+
+    if char is '*'
+        type = 0
+        if arena[left] is '*' or arena[right] is '*'
+            type += 1
+        if arena[top] is '*' or arena[bot] is '*'
+            type += 2
+        return (switch type
+            when 0 then '+'
+            when 1 then '-'
+            when 2 then '|'
+            when 3 then '+')
+    else if char is '#'
+        #      ###      \|/
+        # turn ### into -*-
+        #      ###      /|\
+        visible = (x) -> (x is '#' or x is '#')
+        
+        if visible(arena[left])
+            if visible(arena[right])  # middle column
+                if visible(arena[top]) and visible(arena[bot])
+                    return '*'
+                else
+                    return '|'
+            else                    # right-most column
+                if visible(arena[top])
+                    if visible(arena[bot])
+                        return '-'
+                    else
+                        return '\\'
+                else
+                    return '/'
+        else    # left-most column
+            if visible(arena[top])
+                if visible(arena[bot])
+                    return '-'
+                else
+                    return '/'
+            else
+                return '\\'
 
 
 getScoreboard = (scores) ->
