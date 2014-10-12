@@ -51,7 +51,11 @@ $( window ).keydown ((evt) ->
             type = "move"
         socket.emit(type, {direction: direction, username: window.uname})
     else if fire
-        socket.emit("fire", {username: window.uname})
+        if evt.shiftKey
+            type = "bomb"
+        else
+            type = "fire"
+        socket.emit(type, {username: window.uname})
     else if scan
         socket.emit("scan", {username: window.uname})
     else if cloak

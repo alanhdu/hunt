@@ -1,5 +1,6 @@
 from __future__ import division
-from collections import namedtuple, deque, defaultdict
+from collections import namedtuple, deque
+import settings
 from decimal import *
 
 import numpy as np
@@ -24,7 +25,7 @@ def rule1234_3(grid):
 def debugMaze():
     maze = """\
 *****************************************************
-*                                                   *
+*                        *                          *
 *                        *                          *
 *                        *                          *
 *                        *                          *
@@ -61,18 +62,18 @@ def move(p, direction):
         return Point(x=p.x, y=p.y+1)
 
 Point = namedtuple("Point", ["y", "x"])
-Bullet = namedtuple("Bullet", ["pos", "direction", "source"])
 
-speed = defaultdict(int, {"move": 4})
-damage = {"bullet": 5, "stab": 2}
+Projectile = namedtuple("Projectile", ["pos", "direction", "source", "type"])
 
 class Game(object):
-    def __init__(self, w=51, h=23, debug=False):
+    def __init__(self, settings=settings.default, debug=False):
+        w, h = settings.w, settings.h
+        self.settings = settings
         self.players = {} 
-        self.bullets = []
+        self.projectiles = []
 
         start = -np.zeros((h+2, w+2), dtype=bool)
-        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.8
+        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.9
         for i in xrange(200):
             start = rule1234_3(start)
         self.arena = np.array([["*" if x else " " for x in y]
@@ -91,70 +92,79 @@ class Game(object):
                 return player
 
     def update(self):
+        # clear explosions
+        height, width = self.arena.shape
+        for x in xrange(width):
+            for y in xrange(height):
+                if self.arena[y, x] == "#":
+                    self.arena[y, x] = " "
+
+        for i in xrange(self.settings.pace):
+            for proj in self.projectiles:   # update bullets
+                self.arena[proj.pos] = " "
+
+            projectiles = [Projectile(move(proj.pos, proj.direction), 
+                                      proj.direction, proj.source, proj.type)
+                           for proj in self.projectiles]
+            self.projectiles = []
+            for proj in projectiles:
+                self.updateProjectile(proj)
+
         # Update player movements
         for player in self.players.itervalues():
             player.update()
 
-        # Update bullet movements
-        for bullet in self.bullets:
-            self.arena[bullet.pos] = " "
-
-        bullets = [Bullet(move(bullet.pos, bullet.direction), 
-                          bullet.direction, bullet.source)
-                   for bullet in self.bullets
-                   if self.inArena(move(bullet.pos, bullet.direction))]
-        self.bullets = []
-        for bullet in bullets:
-            if self.arena[bullet.pos] == " ":
-                self.arena[bullet.pos] = ":"
-                self.bullets.append(bullet)
-            elif self.arena[bullet.pos] == "*":
-                self.arena[bullet.pos] = " "
-            elif self.arena[bullet.pos] in "<>v^":
-                player = self.findPlayer(bullet.pos)
-                player.hit(bullet.source, "bullet")
         # Update scores
         for player in self.players.itervalues():
             player.updateScore()
+            player.updateMask()
 
+        # regenerate recharges
+        while len(self.players) > (self.arena == 'A').sum():
+            h, w = self.arena.shape
+            y, x = np.random.randint(0, h), np.random.randint(0, w)
+            while self.arena[y, x] != " ":
+                y, x = np.random.randint(0, h), np.random.randint(0, w)
+            self.arena[y, x] = "A"
+
+    def updateProjectile(self, proj):
+        render = {"bullet":":", "bomb": "o"}
+        if self.arena[proj.pos] == " " and self.inArena(proj.pos):
+            self.arena[proj.pos] = render[proj.type]
+            self.projectiles.append(proj)
+        elif proj.type == "bullet":
+            if self.arena[proj.pos] == "*":
+                self.arena[proj.pos] = " "
+            elif self.arena[proj.pos] in "<>v^":
+                player = self.findPlayer(proj.pos)
+                player.hit(bullet.source, proj.type)
+        elif proj.type == "bomb" and self.arena[proj.pos] in "#<>v^*":  #explode!
+            y, x = proj.pos
+
+            for player in self.players.values():
+                py, px = player.pos
+                if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
+                    player.hit(proj.source, proj.type)
+
+            # prevent things from clearing the edges
+            h, w = self.arena.shape
+            y_low = max(y - 1, 1)
+            y_high = min(y + 2, h - 1)
+
+            x_low = max(x - 1, 1)
+            x_high = min(x + 2, w - 1)
+            
+            cs = self.arena[y_low:y_high, x_low:x_high]
+            cs[:] = "#"
+    
     def __str__(self):
         height, width = self.arena.shape
-        return  "\n".join("".join(self.getType(x, y) 
+        return  "\n".join("".join(self.arena[y, x]
                                   for x in xrange(width))
                           for y in xrange(height))
     def inArena(self, p):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
         return all(0 < a < b - 1 for a, b in zip(p, self.arena.shape))
-    def getType(self, x, y):
-        if self.arena[y, x] != "*":
-            return self.arena[y, x]
-
-        top    = self.isStar(x, y - 1)
-        bottom = self.isStar(x, y + 1)
-        left   = self.isStar(x - 1, y)
-        right  = self.isStar(x + 1, y)
-
-        dash = left or right
-        pipe = top or bottom
-
-        if dash and pipe:
-            return "+"
-        elif dash:
-            return "-"
-        elif pipe:
-            return "|"
-        else:
-            return "+"
-
-    def isStar(self, x, y):
-        if (x < 0 or y < 0):
-            return False
-        try:
-            c = self.arena[y, x]
-        except IndexError:
-            return False
-        return c == "*"
-
 
 class Player(object):
     def __init__(self, game, name):
@@ -198,14 +208,21 @@ class Player(object):
 
         mask = np.zeros(self.game.arena.shape, dtype=bool)
 
+        def stopper(array):
+            b = np.zeros(array.shape, dtype=bool)
+            for stop in "*v^<>":
+                b += (array == stop)
+                pass
+            return array == "*" 
+
         if self.facing != "v":
-            mask[:y, x] = ((col[y - 1::-1] == "*").cumsum() == 0)[::-1]
+            mask[:y, x] = (stopper(col[y - 1::-1]).cumsum() == 0)[::-1]
         if self.facing != "^":
-            mask[y+1:, x] = ((col[y + 1:] == "*").cumsum() == 0)
+            mask[y+1:, x] = stopper(col[y + 1:]).cumsum() == 0
         if self.facing != ">":
-            mask[y, :x] = ((row[x - 1::-1] == "*").cumsum() == 0)[::-1]
+            mask[y, :x] = (stopper(row[x - 1::-1]).cumsum() == 0)[::-1]
         if self.facing != "<":
-            mask[y, x+1:] = ((row[x + 1:] == "*").cumsum() == 0)
+            mask[y, x+1:] = stopper(row[x + 1:]).cumsum() == 0
 
         mask[y, x] = True
 
@@ -221,6 +238,7 @@ class Player(object):
                             mask[2:,   :-2] + mask[2:,  1:-1] + mask[2:,   2:])
 
         # Flip so True -> Masked & Invisible
+        self.currentView = -mask
         self.view.mask *= -mask
 
     def queue(self, action, *args, **kwargs):
@@ -229,21 +247,24 @@ class Player(object):
         self.actions.append((action, args, kwargs))
 
     def update(self):
+        self.game.arena[self.pos] = self.facing
         self.msg = None
         if self.actions:
             func, args, kwargs = self.actions.popleft()
-            if func == "move" and self.lastActionTime >= speed["move"]:
+            if func == "move" and self.lastActionTime >= self.game.settings.speed["move"]:
                 self.move(*args, **kwargs)
-                self.lastActionTime = 0
-            elif func == "move":
-                self.lastActionTime += 1
-                self.actions.appendleft( (func, args, kwargs) )
-            elif func == "turn" and self.lastActionTime >= speed["turn"]:
-                self.lastActionTime += 1
-                self.turn(*args, **kwargs)
-            elif func == "fire" and self.lastActionTime >= speed["fire"]:
-                self.lastActionTime += 1
-                self.fire(*args, **kwargs)
+                self.lastActionTime = 1
+            else:
+                if func == "move":
+                    self.queue(func, *args, **kwargs)
+                elif func == "turn" and self.lastActionTime >= self.game.settings.speed["turn"]:
+                    self.turn(*args, **kwargs)
+                elif func == "fire" and self.lastActionTime >= self.game.settings.speed["fire"]:
+                    self.fire(*args, type="bullet", **kwargs)
+                elif func == "bomb" and self.lastActionTime >= self.game.settings.speed["fire"]:
+                    self.fire(*args, type="bomb", **kwargs)
+
+                self.lastActionTime += self.game.settings.pace
         else:
             self.lastActionTime += 1
 
@@ -264,6 +285,10 @@ class Player(object):
             if self.game.arena[p] == " ":
                 self.pos = p
                 self.updateMask()
+            if self.game.arena[p] == "A":
+                self.ammo += self.game.settings.ammo["recharge"]
+                self.pos = p
+                self.updateMask()
             elif self.game.arena[p] in "<>v^" and direction == self.facing:
                 # if we're facing someone and move into them, stab
                 other = self.game.findPlayer(p)
@@ -276,63 +301,81 @@ class Player(object):
         self.updateMask()
         self.game.arena[self.pos] = self.facing
 
-    def fire(self):
+    def fire(self, type):
         pos = move(self.pos, self.facing)
         if self.game.inArena(pos):
-            if self.ammo > 0:
-                bullet = Bullet(pos, self.facing, self)
-                self.ammo -= 1
-                if self.game.arena[bullet.pos] == " ":
-                    self.game.bullets.append(bullet)
-                    self.game.arena[bullet.pos] = ":"
-                elif self.game.arena[bullet.pos] == "*":
-                    self.game.arena[bullet.pos] = " "
-                elif self.game.arena[bullet.pos] in "v^<>": # Direct hit
-                    other = self.game.findPlayer(bullet.pos)
-                    other.hit(self, "bullet")
+            if self.ammo >= self.game.settings.ammo[type]:
+                proj = Projectile(pos, self.facing, self, type)
+                self.ammo -= self.game.settings.ammo[type]
+                self.game.updateProjectile(proj)
             else:
-                self.msg = "You are out of ammo"
-
+                self.msg = "You don't have enough ammo for a {}".format(type)
 
     def hit(self, src, method):
-        if method == "bullet":
-            self.msg = "{src} hit you with a bullet".format(src=src.name)
-            src.msg = "You hit {target} with a bullet".format(target=self.name)
-        elif method == "stab":
-            self.msg = "{src} stabbed you".format(src=src.name)
-            src.msg = "You stabbed {target}".format(target=self.name)
+        self.health -= self.game.settings.damage[method]
+        if src is self:
+            if method == "bullet":
+                self.msg = "You hit yourself with a bullet"
+            elif method == "bomb":
+                self.msg = "You hit yourself with a bomb"
+            elif method == "stab":
+                self.msg = "You managed to stab yourself. That shouldn't be possible"
 
-        self.health -= damage[method]
-        if self.health <= 0:
-            self.msg = "{src} killed you".format(src=src.name)
-            src.msg = "You killed {target}".format(target=self.name)
+            if self.health <= 0:
+                self.msg = "You commited suicide!"
+                self.kills += 1
+                self.deaths += 1
+                self.currentScore -= 5
+                self.rebirth()
+        else:
+            if method == "bullet":
+                self.msg = "{src} hit you with a bullet".format(src=src.name)
+                src.msg = "You hit {target} with a bullet".format(target=self.name)
+            elif method == "stab":
+                self.msg = "{src} stabbed you".format(src=src.name)
+                src.msg = "You stabbed {target}".format(target=self.name)
+            elif method == "bomb":
+                self.msg = "{src} hit you with a bomb".format(src=src.name)
+                src.msg = "You hit {target} with a bomb".format(target=self.name)
 
-            src.health += 2     #generate health
-            src.kills += 1
-            self.deaths += 1
+            if self.health <= 0:
+                self.msg = "{src} killed you".format(src=src.name)
+                src.msg = "You killed {target}".format(target=self.name)
 
-            self.currentScore -= 1
-            src.currentScore += 1
+                src.health += 2     #generate health
+                src.kills += 1
+                self.deaths += 1
 
-            self.game.arena[self.pos] = " "
-            self.rebirth()
+                self.currentScore -= 1
+                src.currentScore += 1
+
+                self.game.arena[self.pos] = " "
+                self.rebirth()
 
     def updateScore(self):
         # use Decimal to avoid annoying scores like 0.000000000001
-        self.score = Decimal('0.998') * self.score + self.currentScore
+        self.score = Decimal('0.9998') * self.score + self.currentScore
         self.currentScore = 0
+
+    def getView(self, x, y):
+        c = self.game.arena[y, x]
+        if not self.currentView[y, x]:
+            return c
+        elif not self.view.mask[y, x] and c == "*":  # walls of arena
+            return c
+        else:
+            return " "
 
     def __str__(self):
         h, w = self.view.shape
-        s = "\n".join("".join(  self.game.getType(x, y) 
-                                if not self.view.mask[y, x]
-                                else " "
+        s = "\n".join("".join(self.getView(x, y)
                               for x in xrange(w))
                       for y in xrange(h))
         return s
 
     def to_json(self):
         d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
+             "x": self.pos.x, "y": self.pos.y,
              "scores": {name: {"kills":player.kills, "deaths":player.deaths,
                                "score":round(player.score, 3)}      # 3 decimal points of score
                         for name, player in self.game.players.iteritems()}}

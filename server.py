@@ -70,6 +70,11 @@ def fire(msg):
     user = msg["username"]
     m.players[user].queue("fire")
 
+@socketio.on("bomb")
+def bomb(msg):
+    user = msg["username"]
+    m.players[user].queue("bomb")
+
 @socketio.on("scan")
 def scan(msg):
     user = msg["username"]
