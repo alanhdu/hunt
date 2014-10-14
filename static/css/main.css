@@ -9,10 +9,16 @@ body {
     font-family: monospace;
 }
 
-#arena {
+.square {
     font-family: square, monospace;
     text-align:center;
     font-size: 2vmin;
+}
+
+.rect {
+    font-family: monospace;
+    text-align:center;
+    font-size: 12px;
 }
 
 #highlight {
