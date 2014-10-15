@@ -137,7 +137,7 @@ class Game(object):
                 self.arena[proj.pos] = " "
             elif self.arena[proj.pos] in "<>v^":
                 player = self.findPlayer(proj.pos)
-                player.hit(bullet.source, proj.type)
+                player.hit(proj.source, proj.type)
         elif proj.type == "bomb" and self.arena[proj.pos] in "#<>v^*":  #explode!
             y, x = proj.pos
 
