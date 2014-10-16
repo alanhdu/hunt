@@ -41,7 +41,8 @@ no rooms, no treasures, and no monsters.  Instead, you wander around a
 maze, find grenades, trip mines, and shoot down walls and players. The
 more players you kill before you die, the better your score is.
 
-# Instructions - from terminal man page
+# Instructions - from terminal man page (for real version, see INSTRUCTIONS.md)
+
 Hunt uses the same keys to move as vi(1) does, i.e., h, j, k, and l for
 left, down, up, right respectively.  To change which direction you're
 facing in the maze, use the upper case version of the movement key (i.e.,

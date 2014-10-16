@@ -2,7 +2,9 @@ import subprocess
 import glob
 
 import gevent
+import markdown
 from flask import Flask, render_template, copy_current_request_context, request
+from flask import Markup
 from flask.ext.socketio import SocketIO, emit, join_room
 from socketio.namespace import BaseNamespace
 
@@ -21,7 +23,6 @@ def exception_handler(value):
 
 m = game.Game()
 
-
 @app.route("/")
 def index(interval=0.05):
     @copy_current_request_context
@@ -38,6 +39,13 @@ def index(interval=0.05):
     gevent.spawn(run)
 
     return render_template("play.html")
+
+@app.route("/instructions")
+def instruct():
+    with open("INSTRUCTIONS.md") as fin:
+        content = markdown.markdown(fin.read())
+        # Markup to escape html characters
+        return render_template("instructions.html", content=Markup(content))
 
 @socketio.on("begin")
 def begin(msg):
