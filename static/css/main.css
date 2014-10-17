@@ -9,6 +9,13 @@ body {
     font-family: monospace;
 }
 
+code {
+    white-space: pre;
+    word-break: normal;
+    word-wrap: normal;
+    font-family: monospace;
+}
+
 .square {
     font-family: square, monospace;
     text-align:center;
