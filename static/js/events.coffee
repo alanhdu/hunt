@@ -18,16 +18,6 @@ $( "#play" ).on "click", (() ->
         alert("Already logged in!")
 )
 
-$( "#square" ).on "click", (() ->
-    console.log $( "#square" ).prop("checked")
-    if $( "#square" ).prop("checked")
-        $( "#arena" ).removeClass("rect")
-        $( "#arena" ).addClass("square")
-    else
-        $( "#arena" ).removeClass("square")
-        $( "#arena" ).addClass("rect")
-)
-
 window.onunload = ((evt) ->
     if window.uname isnt undefined
         socket.emit("logoff", {username:window.uname})
