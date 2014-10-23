@@ -1,3 +1,10 @@
+$( "#square" ).on "click", (() ->
+    if $("#square").prop("checked")
+        $(".rect").removeClass("rect").addClass("square")
+    else
+        $(".square").removeClass("square").addClass("rect")
+)
+
 @update = (info) ->
     document.getElementById("scores").innerHTML = getScoreboard(info["scores"])
     document.getElementById("arena").innerHTML = displayArena(info["arena"], info["x"], info["y"])
@@ -5,8 +12,7 @@
     for key in ["health", "ammo", "msg"]
         if key of info
             document.getElementById(key).innerHTML = escape(info[key])
-
-    null
+    return null
 
 @clear = () ->
     for key in ["health", "ammo", "msg", "arena", "scores"]

@@ -2,6 +2,14 @@
 (function() {
   var displayArena, escape, getScoreboard, getType, pad;
 
+  $("#square").on("click", (function() {
+    if ($("#square").prop("checked")) {
+      return $(".rect").removeClass("rect").addClass("square");
+    } else {
+      return $(".square").removeClass("square").addClass("rect");
+    }
+  }));
+
   this.update = function(info) {
     var key, _i, _len, _ref;
     document.getElementById("scores").innerHTML = getScoreboard(info["scores"]);

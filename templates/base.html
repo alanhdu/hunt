@@ -4,8 +4,6 @@
         <meta charset="UTF-8">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
-        {% block scripts %}
-        {% endblock %}
 
         <title> Hunt Online </title>
     </head>
@@ -22,10 +20,18 @@
 		  <li><a><input type="text" value="anon" id="username" /></a></li>
                	  <li><a href="/#" id="play"> Play </a></li>
                   <li><a href="/instructions">Instructions</a>
+                  <li style="margin-left:200px;"> <a>square font: <input type="checkbox" id="square" checked> </a> </li>
                 </ul>
             </div>
         </div>
         {% block content %}
         {% endblock %}
+
+        {% block scripts %}
+        <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-2.1.1.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/util.js') }}"></script>
+        {% endblock %}
+
     </body>
 </html>

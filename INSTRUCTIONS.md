@@ -28,7 +28,7 @@ There are two special options: scanning and cloaking. When scanning, you can see
 
 Symbols on Screen
 ---
-  - `+|` walls
+  - `+|-` walls
   - `:` bullets
   - `o` bomb
   - `<>v^` player cursor, depending on which direction you're facing: left, right, down, or up respectively. Your cursor will be highlighted.

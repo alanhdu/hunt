@@ -13,13 +13,20 @@ code {
     white-space: pre;
     word-break: normal;
     word-wrap: normal;
-    font-family: monospace;
 }
 
 #arena {
+    font-size: 2vmin;
+}
+
+.square {
     font-family: square, monospace;
     text-align:center;
-    font-size: 2vmin;
+}
+
+.rect {
+    font-family: monospace;
+    text-align:center;
 }
 
 #highlight {
