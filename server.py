@@ -44,6 +44,7 @@ def index(interval=0.05):
 def instruct():
     with open("INSTRUCTIONS.md") as fin:
         content = markdown.markdown(fin.read())
+        content = content.replace("<code>", "<code class='square'>")
         # Markup to escape html characters
         return render_template("instructions.html", content=Markup(content))
 

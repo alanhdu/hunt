@@ -1,17 +1,10 @@
 {% extends "base.html" %}
 
-{% block scripts %}        
-<script type="text/javascript" src="{{ url_for('static', filename='js/jquery-2.1.1.min.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='js/socket.io-0.9.16.js') }}"></script>
-
-<script type="text/javascript" src="{{ url_for('static', filename='js/render.js') }}"></script>
-{% endblock %}
 
 
 {% block content %}
 <div class="content row">
-    <div id="arena" class="col-md-8"></div>
+    <div id="arena" class="col-md-8 square"></div>
     <div id="status" class="col-md-4">
         <label> Health: </label> <span id="health">0</span> <br/>
         <label> Ammo: </label> <span id="ammo">0</span>
@@ -19,5 +12,11 @@
         <div id="scores"> </div>
     </div>
 </div>
-<script type="text/javascript" src="{{ url_for('static', filename='js/events.js') }}"></script>
+{% endblock %}
+
+{% block scripts %}        
+{{super()}}
+<script type="text/javascript" src="{{ url_for('static', filename='js/socket.io-0.9.16.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/socket.js') }}"></script>
+
 {% endblock %}
