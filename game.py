@@ -99,8 +99,9 @@ class Game(object):
                 if self.arena[y, x] == "#":
                     self.arena[y, x] = " "
 
+        # clear projectiles
         for i in xrange(self.settings.pace):
-            for proj in self.projectiles:   # update bullets
+            for proj in self.projectiles:
                 self.arena[proj.pos] = " "
 
             projectiles = [Projectile(move(proj.pos, proj.direction), 
@@ -133,12 +134,12 @@ class Game(object):
             self.arena[proj.pos] = render[proj.type]
             self.projectiles.append(proj)
         elif proj.type == "bullet":
-            if self.arena[proj.pos] == "*":
+            if self.arena[proj.pos] == "*" and self.inArena(proj.pos):
                 self.arena[proj.pos] = " "
             elif self.arena[proj.pos] in "<>v^":
                 player = self.findPlayer(proj.pos)
                 player.hit(proj.source, proj.type)
-        elif proj.type == "bomb" and self.arena[proj.pos] in "#<>v^*":  #explode!
+        elif proj.type == "bomb" and self.arena[proj.pos] in "A#<>v^*":  #explode!
             y, x = proj.pos
 
             for player in self.players.values():
