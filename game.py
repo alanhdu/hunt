@@ -2,25 +2,58 @@ from __future__ import division
 from collections import namedtuple, deque
 import settings
 from decimal import *
+from random import shuffle
 
 import numpy as np
 
 import custom_exceptions as excpt
 
-def numNeighbors(grid):
-    m = grid.astype(int)
-    m[1:-1, 1:-1] = (m[:-2,  :-2] + m[:-2, 1:-1] + m[:-2,  2:] +
-                     m[1:-1, :-2] +                m[1:-1, 2:] +
-                     m[2:,   :-2] + m[2:,  1:-1] + m[2:,   2:])
-    return m
+def generateMaze(width, height):
+    if width % 2 == 0:
+        width -= 1
+    if height % 2 == 0:
+        height -= 1
+    
+    maze = -np.zeros((height + 2, width + 2), dtype=bool)
+    visited = []
+    stack = []
+    cellx = 0#np.random.random_integers(0, w)
+    celly = 0#np.random.random_integers(0, h)
+    visited.append((cellx, celly))
+    stack.append((cellx, celly))
+    while len(stack) > 0:
+        maze[cellx * 2 + 1, celly * 2 + 1] = False
+        dirs = [[1,0], [-1,0], [0,1], [0,-1]]
+        shuffle(dirs)
 
-def rule12345_3(grid):
-    n = numNeighbors(grid)
-    return (n == 3) + ( (0 < n) * (n < 6) * grid)
+        changed = False
+        for dirarr in dirs:
+            dx = dirarr[0]
+            dy = dirarr[1]
+            wallx = cellx * 2 + 1 + dx
+            wally = celly * 2 + 1 + dy
+            if changed:
+                continue
+            if wallx == 0 or wallx == height+1:
+                continue
+            if wally == 0 or wally == width+1:
+                continue
+            if visited.count( (cellx + dx, celly + dy) ) == 0: # if we haven't visited this cell
+                maze[wallx, wally] = False
+                cellx += dx
+                celly += dy
+                visited.append( (cellx, celly) )
+                stack.append( (cellx, celly) )
+                changed = True
 
-def rule1234_3(grid):
-    n = numNeighbors(grid)
-    return (n == 3) + ( (0 < n) * (n < 5) * grid)
+        if not changed:
+            cell = stack.pop()
+            cellx = cell[0]
+            celly = cell[1]
+
+    arena = np.array([["*" if x else " " for x in y]
+                           for y in maze])
+    return arena
 
 def debugMaze():
     maze = """\
@@ -72,12 +105,7 @@ class Game(object):
         self.players = {} 
         self.projectiles = []
 
-        start = -np.zeros((h+2, w+2), dtype=bool)
-        start[1:-1, 1:-1] = np.random.rand(h, w) > 0.9
-        for i in xrange(200):
-            start = rule1234_3(start)
-        self.arena = np.array([["*" if x else " " for x in y]
-                               for y in start])
+        self.arena = generateMaze(w, h)
         if debug:
             self.arena = debugMaze()
 

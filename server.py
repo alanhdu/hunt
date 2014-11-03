@@ -95,4 +95,4 @@ def scan(msg):
     m.players[user].cloak = not m.players[user].cloak
 
 if __name__ == "__main__":
-    socketio.run(app)
+    socketio.run(app, port=8080)
