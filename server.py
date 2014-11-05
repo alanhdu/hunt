@@ -24,7 +24,7 @@ def exception_handler(value):
 m = game.Game()
 
 @app.route("/")
-def index(interval=0.05):
+def index(interval=0.025):
     @copy_current_request_context
     def run():
         while True:
@@ -95,4 +95,4 @@ def scan(msg):
     m.players[user].cloak = not m.players[user].cloak
 
 if __name__ == "__main__":
-    socketio.run(app, port=8080)
+    socketio.run(app)

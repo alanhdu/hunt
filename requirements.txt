@@ -1,5 +1,5 @@
 Flask==0.10.1
-Flask-SocketIO==0.4.0
+Flask-SocketIO==0.4.1
 Jinja2==2.7.3
 Markdown==2.5.1
 MarkupSafe==0.23
@@ -11,5 +11,5 @@ gevent-websocket==0.9.3
 greenlet==0.4.5
 gunicorn==19.1.1
 itsdangerous==0.24
-numpy==1.9.0
+numpy==1.9.1
 wsgiref==0.1.2

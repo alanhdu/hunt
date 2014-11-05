@@ -15,12 +15,10 @@ def generateMaze(width, height):
         height -= 1
     
     maze = -np.zeros((height + 2, width + 2), dtype=bool)
-    visited = []
-    stack = []
     cellx = 0#np.random.random_integers(0, w)
     celly = 0#np.random.random_integers(0, h)
-    visited.append((cellx, celly))
-    stack.append((cellx, celly))
+    visited = [(cellx, celly)]
+    stack = [(cellx, celly)]
     while len(stack) > 0:
         maze[cellx * 2 + 1, celly * 2 + 1] = False
         dirs = [[1,0], [-1,0], [0,1], [0,-1]]
@@ -32,24 +30,17 @@ def generateMaze(width, height):
             dy = dirarr[1]
             wallx = cellx * 2 + 1 + dx
             wally = celly * 2 + 1 + dy
-            if changed:
-                continue
-            if wallx == 0 or wallx == height+1:
-                continue
-            if wally == 0 or wally == width+1:
-                continue
-            if visited.count( (cellx + dx, celly + dy) ) == 0: # if we haven't visited this cell
-                maze[wallx, wally] = False
-                cellx += dx
-                celly += dy
-                visited.append( (cellx, celly) )
-                stack.append( (cellx, celly) )
-                changed = True
+            if not changed and 0 < wallx <= height and 0 < wally <= width:
+                if visited.count( (cellx + dx, celly + dy) ) == 0: # if we haven't visited this cell
+                    maze[wallx, wally] = False
+                    cellx += dx
+                    celly += dy
+                    visited.append( (cellx, celly) )
+                    stack.append( (cellx, celly) )
+                    changed = True
 
         if not changed:
-            cell = stack.pop()
-            cellx = cell[0]
-            celly = cell[1]
+            cellx, celly = stack.pop()
 
     arena = np.array([["*" if x else " " for x in y]
                            for y in maze])
