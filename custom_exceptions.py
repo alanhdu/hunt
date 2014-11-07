@@ -13,7 +13,8 @@ class UserError(Exception):
 
 class UsernameTaken(UserError):
     def __init__(self, uname):
-        super(UsernameTaken, self).__init__("Username {} already taken".format(uname))
+        s = "Username {} is already taken".format(uname)
+        super(UsernameTaken, self).__init__(s)
 
 class HittingAWall(UserError):
     def __init__(self):

@@ -1,12 +1,8 @@
-import subprocess
-import glob
-
 import gevent
 import markdown
-from flask import Flask, render_template, copy_current_request_context, request
+from flask import Flask, render_template, copy_current_request_context
 from flask import Markup
-from flask.ext.socketio import SocketIO, emit, join_room
-from socketio.namespace import BaseNamespace
+from flask.ext.socketio import SocketIO, join_room
 
 import game
 import custom_exceptions as excpt
@@ -17,7 +13,7 @@ socketio = SocketIO(app)
 @socketio.on_error_default
 def exception_handler(value):
     if isinstance(value, excpt.UserError):
-        emit("error", str(value))
+        socketio.emit("error", str(value))
     else:
         raise value
 
@@ -51,7 +47,6 @@ def instruct():
 @socketio.on("begin")
 def begin(msg):
     m.addPlayer(msg["username"])
-    player = m.players[msg["username"]]
     join_room(msg["username"])
 
     socketio.emit("acknowledged", {}, room=msg["username"])
@@ -90,7 +85,7 @@ def scan(msg):
     m.players[user].scan = not m.players[user].scan
 
 @socketio.on("cloak")
-def scan(msg):
+def cloak(msg):
     user = msg["username"]
     m.players[user].cloak = not m.players[user].cloak
 

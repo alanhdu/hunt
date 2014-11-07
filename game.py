@@ -1,50 +1,68 @@
 from __future__ import division
 from collections import namedtuple, deque
 import settings
-from decimal import *
+from decimal import Decimal
 from random import shuffle
 
 import numpy as np
 
 import custom_exceptions as excpt
 
-def generateMaze(width, height):
+Point = namedtuple("Point", ["y", "x"])
+Projectile = namedtuple("Projectile", ["pos", "direction", "source", "type"])
+
+def in_arena(p, arena):
+    # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
+    return all(0 < a < b - 1 for a, b in zip(p, arena.shape))
+
+def move(p, direction):
+    if direction == "<":
+        return Point(x=p.x-1, y=p.y)
+    elif direction == ">":
+        return Point(x=p.x+1, y=p.y)
+    elif direction == "^":
+        return Point(x=p.x, y=p.y-1)
+    elif direction == "v":
+        return Point(x=p.x, y=p.y+1)
+    else:
+        raise ValueError("Direction must be <>v^. Got " + direction)
+
+def generate_maze(width, height):
     if width % 2 == 0:
         width -= 1
     if height % 2 == 0:
         height -= 1
-    
+
     maze = -np.zeros((height + 2, width + 2), dtype=bool)
-    cellx = 0#np.random.random_integers(0, w)
-    celly = 0#np.random.random_integers(0, h)
-    visited = [(cellx, celly)]
-    stack = [(cellx, celly)]
+    cell = Point(y=0, x=0)
+    visited = {cell}
+    stack = deque([cell])
+
+    def odd(p):
+        return Point(y=p.y * 2 + 1, x=p.x * 2 + 1)
+
+    dirs = list("<>v^")
     while len(stack) > 0:
-        maze[cellx * 2 + 1, celly * 2 + 1] = False
-        dirs = [[1,0], [-1,0], [0,1], [0,-1]]
+        maze[odd(cell)] = False
         shuffle(dirs)
 
         changed = False
-        for dirarr in dirs:
-            dx = dirarr[0]
-            dy = dirarr[1]
-            wallx = cellx * 2 + 1 + dx
-            wally = celly * 2 + 1 + dy
-            if not changed and 0 < wallx <= height and 0 < wally <= width:
-                if visited.count( (cellx + dx, celly + dy) ) == 0: # if we haven't visited this cell
-                    maze[wallx, wally] = False
-                    cellx += dx
-                    celly += dy
-                    visited.append( (cellx, celly) )
-                    stack.append( (cellx, celly) )
-                    changed = True
+        for d in dirs:
+            wall = move(odd(cell), d)
+            if in_arena(wall, maze) and move(cell, d) not in visited:
+                maze[wall] = False
+                cell = move(cell, d)
+                visited.add(cell)
+                stack.append(cell)
+                changed = True
+                break
 
         if not changed:
-            cellx, celly = stack.pop()
+            cell = stack.pop()
 
-    arena = np.array([["*" if x else " " for x in y]
-                           for y in maze])
-    return arena
+    return np.array([["*" if x else " " for x in y]
+                    for y in maze])
+
 
 def debugMaze():
     maze = """\
@@ -75,29 +93,16 @@ def debugMaze():
 *****************************************************"""
     return np.array([list(line) for line in maze.split("\n")])
 
-def move(p, direction):
-    if direction == "<":
-        return Point(x=p.x-1, y=p.y)
-    elif direction == ">":
-        return Point(x=p.x+1, y=p.y)
-    elif direction == "^":
-        return Point(x=p.x, y=p.y-1)
-    elif direction == "v":
-        return Point(x=p.x, y=p.y+1)
-
-Point = namedtuple("Point", ["y", "x"])
-
-Projectile = namedtuple("Projectile", ["pos", "direction", "source", "type"])
 
 class Game(object):
-    def __init__(self, settings=settings.default, debug=False):
-        w, h = settings.w, settings.h
-        self.settings = settings
-        self.players = {} 
+    def __init__(self, setting=settings.default, debug=False):
+        self.settings = setting
+        self.players = {}
         self.projectiles = []
 
-        self.arena = generateMaze(w, h)
-        if debug:
+        if not debug:
+            self.arena = generate_maze(setting.w, setting.h)
+        else:
             self.arena = debugMaze()
 
     def addPlayer(self, username):
@@ -123,7 +128,7 @@ class Game(object):
             for proj in self.projectiles:
                 self.arena[proj.pos] = " "
 
-            projectiles = [Projectile(move(proj.pos, proj.direction), 
+            projectiles = [Projectile(move(proj.pos, proj.direction),
                                       proj.direction, proj.source, proj.type)
                            for proj in self.projectiles]
             self.projectiles = []
@@ -148,7 +153,7 @@ class Game(object):
             self.arena[y, x] = "A"
 
     def updateProjectile(self, proj):
-        render = {"bullet":":", "bomb": "o"}
+        render = {"bullet": ":", "bomb": "o"}
         if self.arena[proj.pos] == " " and self.inArena(proj.pos):
             self.arena[proj.pos] = render[proj.type]
             self.projectiles.append(proj)
@@ -158,7 +163,7 @@ class Game(object):
             elif self.arena[proj.pos] in "<>v^":
                 player = self.findPlayer(proj.pos)
                 player.hit(proj.source, proj.type)
-        elif proj.type == "bomb" and self.arena[proj.pos] in "A#<>v^*":  #explode!
+        elif proj.type == "bomb" and self.arena[proj.pos] in "A#<>v^*":
             y, x = proj.pos
 
             for player in self.players.values():
@@ -173,18 +178,18 @@ class Game(object):
 
             x_low = max(x - 1, 1)
             x_high = min(x + 2, w - 1)
-            
+
             cs = self.arena[y_low:y_high, x_low:x_high]
             cs[:] = "#"
-    
+
     def __str__(self):
         height, width = self.arena.shape
-        return  "\n".join("".join(self.arena[y, x]
-                                  for x in xrange(width))
-                          for y in xrange(height))
+        return "\n".join("".join(self.arena[y, x]
+                                 for x in xrange(width))
+                         for y in xrange(height))
     def inArena(self, p):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
-        return all(0 < a < b - 1 for a, b in zip(p, self.arena.shape))
+        return in_arena(p, self.arena)
 
 class Player(object):
     def __init__(self, game, name):
@@ -205,7 +210,7 @@ class Player(object):
 
         mask = np.zeros((h, w), dtype=bool)
         # ensure visible edges
-        mask[1:-1, 1:-1] = -np.zeros((h-2, w-2), dtype=bool) 
+        mask[1:-1, 1:-1] = -np.zeros((h-2, w-2), dtype=bool)
 
         self.view = np.ma.masked_array(self.game.arena, mask)
         self.updateMask()
@@ -232,8 +237,7 @@ class Player(object):
             b = np.zeros(array.shape, dtype=bool)
             for stop in "*v^<>":
                 b += (array == stop)
-                pass
-            return array == "*" 
+            return b
 
         if self.facing != "v":
             mask[:y, x] = (stopper(col[y - 1::-1]).cumsum() == 0)[::-1]
@@ -271,17 +275,18 @@ class Player(object):
         self.msg = None
         if self.actions:
             func, args, kwargs = self.actions.popleft()
-            if func == "move" and self.lastActionTime >= self.game.settings.speed["move"]:
+            speed = self.game.settings.speed
+            if func == "move" and self.lastActionTime >= speed["move"]:
                 self.move(*args, **kwargs)
                 self.lastActionTime = 1
             else:
                 if func == "move":
                     self.queue(func, *args, **kwargs)
-                elif func == "turn" and self.lastActionTime >= self.game.settings.speed["turn"]:
+                elif func == "turn" and self.lastActionTime >= speed["turn"]:
                     self.turn(*args, **kwargs)
-                elif func == "fire" and self.lastActionTime >= self.game.settings.speed["fire"]:
+                elif func == "fire" and self.lastActionTime >= speed["fire"]:
                     self.fire(*args, type="bullet", **kwargs)
-                elif func == "bomb" and self.lastActionTime >= self.game.settings.speed["fire"]:
+                elif func == "bomb" and self.lastActionTime >= speed["fire"]:
                     self.fire(*args, type="bomb", **kwargs)
 
                 self.lastActionTime += self.game.settings.pace
@@ -362,7 +367,7 @@ class Player(object):
                 self.msg = "{src} killed you".format(src=src.name)
                 src.msg = "You killed {target}".format(target=self.name)
 
-                src.health += 2     #generate health
+                src.health += 2     # generate health
                 src.kills += 1
                 self.deaths += 1
 
@@ -396,8 +401,8 @@ class Player(object):
     def to_json(self):
         d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
              "x": self.pos.x, "y": self.pos.y,
-             "scores": {name: {"kills":player.kills, "deaths":player.deaths,
-                               "score":round(player.score, 3)}      # 3 decimal points of score
+             "scores": {name: {"kills": player.kills, "deaths": player.deaths,
+                               "score": round(player.score, 3)}
                         for name, player in self.game.players.iteritems()}}
         if self.msg:
             d["msg"] = self.msg
