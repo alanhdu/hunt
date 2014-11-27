@@ -34,16 +34,10 @@
     return null;
   }));
 
-  window.onunload = (function(evt) {
-    if (window.uname !== void 0) {
-      socket.emit("logoff");
-    }
-    return null;
-  });
-
   $(window).keydown((function(evt) {
-    var chr, cloak, direction, fire, key, scan, type;
-    if (evt.target.tagName.toLowerCase() === "input" || window.uname === void 0 || evt.ctrlKey) {
+    var chr, cloak, direction, fire, key, scan, tag, type;
+    tag = evt.target.tagName.toLowerCase();
+    if (tag === "input" || window.uname === void 0 || evt.ctrlKey) {
       return true;
     }
     key = evt.which;

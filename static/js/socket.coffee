@@ -12,17 +12,18 @@ socket.on("disconnect", () ->
     return null
 )
 
-$( "#play" ).on "click", (() ->
+$("#play").on("click", (() ->
     if window.uname is undefined
         socket.emit('begin', {width:51, height:23, username:$("#username").val()})
     else
         alert("Already logged in!")
     return null
+    )
 )
 
-$( window ).keydown ((evt) ->
-    if evt.target.tagName.toLowerCase() is "input" or window.uname is undefined or
-      evt.ctrlKey
+$(window).keydown ((evt) ->
+    tag = evt.target.tagName.toLowerCase()
+    if tag is "input" or window.uname is undefined or evt.ctrlKey
         return true
 
     key = evt.which

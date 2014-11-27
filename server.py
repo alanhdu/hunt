@@ -18,6 +18,7 @@ def exception_handler(value):
         raise value
 
 m = game.Game()
+running = None
 def run(interval=0.025):
     while True:
         gevent.sleep(interval)
@@ -32,7 +33,6 @@ def run(interval=0.025):
 
 @app.route("/")
 def index():
-    gevent.spawn(run)
     return render_template("play.html")
 
 @app.route("/instructions")
@@ -56,10 +56,20 @@ def begin(msg):
 
         socketio.emit("acknowledged", {}, room=msg["username"])
 
+    global running
+    if running is None:
+        running = gevent.spawn(run)
+
 @socketio.on("disconnect")
 def logoff():
-    uname = session["username"]
-    del m.players[uname]
+    if "username" in session:
+        uname = session["username"]
+        del m.players[uname]
+
+        global running
+        if not m.players:
+            running.kill()
+            running = None
 
 @socketio.on("move")
 def move(direction):
