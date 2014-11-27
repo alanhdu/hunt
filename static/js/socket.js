@@ -23,22 +23,24 @@
 
   $("#play").on("click", (function() {
     if (window.uname === void 0) {
-      return socket.emit('begin', {
+      socket.emit('begin', {
         width: 51,
         height: 23,
         username: $("#username").val()
       });
     } else {
-      return alert("Already logged in!");
+      alert("Already logged in!");
     }
+    return null;
   }));
 
   window.onunload = (function(evt) {
     if (window.uname !== void 0) {
-      return socket.emit("logoff", {
+      socket.emit("logoff", {
         username: window.uname
       });
     }
+    return null;
   });
 
   $(window).keydown((function(evt) {
@@ -80,7 +82,7 @@
       } else {
         type = "move";
       }
-      return socket.emit(type, {
+      socket.emit(type, {
         direction: direction,
         username: window.uname
       });
@@ -90,18 +92,19 @@
       } else {
         type = "fire";
       }
-      return socket.emit(type, {
+      socket.emit(type, {
         username: window.uname
       });
     } else if (scan) {
-      return socket.emit("scan", {
+      socket.emit("scan", {
         username: window.uname
       });
     } else if (cloak) {
-      return socket.emit("cloak", {
+      socket.emit("cloak", {
         username: window.uname
       });
     }
+    return null;
   }));
 
 }).call(this);

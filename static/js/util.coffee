@@ -3,22 +3,24 @@ $( "#square" ).on "click", (() ->
         $(".rect").removeClass("rect").addClass("square")
     else
         $(".square").removeClass("square").addClass("rect")
+    return null
 )
 
 @update = (info) ->
     document.getElementById("scores").innerHTML = getScoreboard(info["scores"])
-    document.getElementById("arena").innerHTML = displayArena(info["arena"], info["x"], info["y"])
+    document.getElementById("arena").innerHTML = displayArena(info.player["arena"], info.player["x"], info["y"])
 
     for key in ["msg", "cloak", "scan"]
-        if key of info
-            document.getElementById(key).innerHTML = escape(info[key])
+        if key of info.player
+            document.getElementById(key).innerHTML = escape(info.player[key])
     for key in ["health", "ammo"]
-        document.getElementById(key).innerHTML = formatNumber(info[key])
+        document.getElementById(key).innerHTML = formatNumber(info.player[key])
     return null
 
 @clear = () ->
     for key in ["health", "ammo", "msg", "arena", "scores", "cloak", "scan"]
         document.getElementById(key).innerHTML = ""
+    return null
 
 displayArena = (arena, curX, curY) ->
     x = 0
@@ -57,6 +59,7 @@ getType = (char, arena, x , y) ->
             type += 1
         if arena[top] is '*' or arena[bot] is '*'
             type += 2
+
         return (switch type
             when 0 then '+'
             when 1 then '-'

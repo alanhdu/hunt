@@ -28,7 +28,9 @@ def index(interval=0.025):
             m.update()
 
             emit = socketio.emit
-            jobs = [gevent.spawn(emit, "update", player.to_json(), room=uname)
+            jobs = [gevent.spawn(emit, "update",
+                         {"player": player.to_json(), "scores": m.to_json()},
+                         room=uname)
                     for uname, player in m.players.iteritems()]
             gevent.joinall(jobs)
 

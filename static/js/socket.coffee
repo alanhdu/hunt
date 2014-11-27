@@ -9,7 +9,7 @@ socket.on("disconnect", () ->
     window.uname = undefined
     clear()
     document.getElementById("status").innerHTML = "Disconnected from server"
-    null
+    return null
 )
 
 $( "#play" ).on "click", (() ->
@@ -17,11 +17,13 @@ $( "#play" ).on "click", (() ->
         socket.emit('begin', {width:51, height:23, username:$("#username").val()})
     else
         alert("Already logged in!")
+    return null
 )
 
 window.onunload = ((evt) ->
     if window.uname isnt undefined
         socket.emit("logoff", {username:window.uname})
+    return null
 )
 
 $( window ).keydown ((evt) ->
@@ -61,4 +63,5 @@ $( window ).keydown ((evt) ->
         socket.emit("scan", {username: window.uname})
     else if cloak
         socket.emit("cloak", {username: window.uname})
+    return null
 )

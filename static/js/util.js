@@ -4,40 +4,40 @@
 
   $("#square").on("click", (function() {
     if ($("#square").prop("checked")) {
-      return $(".rect").removeClass("rect").addClass("square");
+      $(".rect").removeClass("rect").addClass("square");
     } else {
-      return $(".square").removeClass("square").addClass("rect");
+      $(".square").removeClass("square").addClass("rect");
     }
+    return null;
   }));
 
   this.update = function(info) {
     var key, _i, _j, _len, _len1, _ref, _ref1;
     document.getElementById("scores").innerHTML = getScoreboard(info["scores"]);
-    document.getElementById("arena").innerHTML = displayArena(info["arena"], info["x"], info["y"]);
+    document.getElementById("arena").innerHTML = displayArena(info.player["arena"], info.player["x"], info["y"]);
     _ref = ["msg", "cloak", "scan"];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       key = _ref[_i];
-      if (key in info) {
-        document.getElementById(key).innerHTML = escape(info[key]);
+      if (key in info.player) {
+        document.getElementById(key).innerHTML = escape(info.player[key]);
       }
     }
     _ref1 = ["health", "ammo"];
     for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
       key = _ref1[_j];
-      document.getElementById(key).innerHTML = formatNumber(info[key]);
+      document.getElementById(key).innerHTML = formatNumber(info.player[key]);
     }
     return null;
   };
 
   this.clear = function() {
-    var key, _i, _len, _ref, _results;
+    var key, _i, _len, _ref;
     _ref = ["health", "ammo", "msg", "arena", "scores", "cloak", "scan"];
-    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       key = _ref[_i];
-      _results.push(document.getElementById(key).innerHTML = "");
+      document.getElementById(key).innerHTML = "";
     }
-    return _results;
+    return null;
   };
 
   displayArena = function(arena, curX, curY) {

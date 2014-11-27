@@ -187,6 +187,10 @@ class Game(object):
         return "\n".join("".join(self.arena[y, x]
                                  for x in xrange(width))
                          for y in xrange(height))
+    def to_json(self):
+        return {name: {"kills": player.kills, "deaths": player.deaths,
+                               "score": round(player.score, 3)}
+                        for name, player in self.players.iteritems()}
     def inArena(self, p):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
         return in_arena(p, self.arena)
@@ -413,10 +417,7 @@ class Player(object):
     def to_json(self):
         d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
              "x": self.pos.x, "y": self.pos.y, "cloak": self.cloak, 
-             "scan": self.scan,
-             "scores": {name: {"kills": player.kills, "deaths": player.deaths,
-                               "score": round(player.score, 3)}
-                        for name, player in self.game.players.iteritems()}}
+             "scan": self.scan}
         if self.msg:
             d["msg"] = self.msg
 
