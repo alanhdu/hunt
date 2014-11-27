@@ -192,10 +192,15 @@ class Game(object):
         return in_arena(p, self.arena)
 
 class Player(object):
+    game, name, deaths, score, cloak = None, None, None, None, None
+    view, ammo, kills, pos, facing = None, None, None, None, None
+    actions, lastActionTime, msg, health = None, None, None, None
+    currentView = None
+
     def __init__(self, game, name):
         self.game = game
         self.name = name
-        self.deaths = self.kills = self.currentScore = 0
+        self.deaths = self.kills = 0
         self.score = Decimal(0)
         self.cloak = self.scan = False
         self.rebirth()
@@ -208,8 +213,8 @@ class Player(object):
         self.facing = "<>v^"[np.random.randint(4)]
         self.game.arena[self.pos] = self.facing
 
-        mask = np.zeros((h, w), dtype=bool)
         # ensure visible edges
+        mask = np.zeros((h, w), dtype=bool)
         mask[1:-1, 1:-1] = -np.zeros((h-2, w-2), dtype=bool)
 
         self.view = np.ma.masked_array(self.game.arena, mask)
@@ -291,7 +296,7 @@ class Player(object):
 
                 self.lastActionTime += self.game.settings.pace
         else:
-            self.lastActionTime += 1
+            self.lastActionTime += self.game.settings.pace
 
         self.updateMask()
 
@@ -299,12 +304,20 @@ class Player(object):
         self.game.arena[self.pos] = ' '
         p = move(self.pos, direction)
 
-        if self.cloak:
-            self.ammo -= 0.05
+        if self.cloak :
+            if self.ammo >= self.game.settings.ammo["cloak"]:
+                self.ammo -= self.game.settings.ammo["cloak"]
+            else:
+                self.cloak = False
+                self.msg = "No more ammo for cloaking"
         else:
             for player in self.game.players.itervalues():
                 if player.scan and player is not self:
-                    player.ammo -= 0.05
+                    if player.ammo >= self.game.settings.ammo["scan"]:
+                        player.ammo -= self.game.settings.ammo["scan"]
+                    else:
+                        player.scan = False
+                        player.msg = "No more ammo for scanning"
 
         if self.game.inArena(p):
             if self.game.arena[p] == " ":
@@ -350,7 +363,7 @@ class Player(object):
                 self.msg = "You commited suicide!"
                 self.kills += 1
                 self.deaths += 1
-                self.currentScore -= 5
+                self.score -= 5
                 self.rebirth()
         else:
             if method == "bullet":
@@ -371,16 +384,15 @@ class Player(object):
                 src.kills += 1
                 self.deaths += 1
 
-                self.currentScore -= 1
-                src.currentScore += 1
+                self.score -= 1
+                src.score += 1
 
                 self.game.arena[self.pos] = " "
                 self.rebirth()
 
     def updateScore(self):
         # use Decimal to avoid annoying scores like 0.000000000001
-        self.score = Decimal('0.9998') * self.score + self.currentScore
-        self.currentScore = 0
+        self.score = Decimal('0.9998') * self.score
 
     def getView(self, x, y):
         c = self.game.arena[y, x]
@@ -400,7 +412,8 @@ class Player(object):
 
     def to_json(self):
         d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
-             "x": self.pos.x, "y": self.pos.y,
+             "x": self.pos.x, "y": self.pos.y, "cloak": self.cloak, 
+             "scan": self.scan,
              "scores": {name: {"kills": player.kills, "deaths": player.deaths,
                                "score": round(player.score, 3)}
                         for name, player in self.game.players.iteritems()}}

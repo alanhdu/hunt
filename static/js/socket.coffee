@@ -9,7 +9,8 @@ socket.on("disconnect", () ->
     window.uname = undefined
     clear()
     document.getElementById("status").innerHTML = "Disconnected from server"
-    null)
+    null
+)
 
 $( "#play" ).on "click", (() ->
     if window.uname is undefined

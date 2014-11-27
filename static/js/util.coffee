@@ -9,13 +9,15 @@ $( "#square" ).on "click", (() ->
     document.getElementById("scores").innerHTML = getScoreboard(info["scores"])
     document.getElementById("arena").innerHTML = displayArena(info["arena"], info["x"], info["y"])
 
-    for key in ["health", "ammo", "msg"]
+    for key in ["msg", "cloak", "scan"]
         if key of info
             document.getElementById(key).innerHTML = escape(info[key])
+    for key in ["health", "ammo"]
+        document.getElementById(key).innerHTML = formatNumber(info[key])
     return null
 
 @clear = () ->
-    for key in ["health", "ammo", "msg", "arena", "scores"]
+    for key in ["health", "ammo", "msg", "arena", "scores", "cloak", "scan"]
         document.getElementById(key).innerHTML = ""
 
 displayArena = (arena, curX, curY) ->
@@ -100,7 +102,7 @@ getScoreboard = (scores) ->
         if uname.length > unameLength
             unameLength = uname.length
         for key, stat of stats
-            stat = String(stat)
+            stat = formatNumber(stat)
             if key not of statLengths or stat.length > statLengths[key]
                 statLengths[key] = stat.length
 
@@ -110,7 +112,7 @@ getScoreboard = (scores) ->
 
     for uname, stats of scores
         uname = pad(uname, unameLength + xp)
-        stats = (pad(stats[key], len + xp) for key, len of statLengths).join("|")
+        stats = (pad(formatNumber(stats[key]), len + xp) for key, len of statLengths).join("|")
         map += "\n#{uname}|#{stats}"
 
     return escape(map)
@@ -132,3 +134,6 @@ escape = (str) ->
             when '"' then "&quot;"
             when '&' then "&amp;"
     )
+
+formatNumber = (num) ->
+    Number(num).toFixed(2)
