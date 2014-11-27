@@ -8,6 +8,7 @@ import game
 import custom_exceptions as excpt
 
 app = Flask(__name__)
+app.secret_key = "It's a secret!"
 socketio = SocketIO(app)
 
 @socketio.on_error_default
@@ -102,5 +103,4 @@ def cloak():
     m.players[user].cloak = not m.players[user].cloak
 
 if __name__ == "__main__":
-    app.secret_key = "It's a secret!"
     socketio.run(app)
