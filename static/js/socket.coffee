@@ -20,12 +20,6 @@ $( "#play" ).on "click", (() ->
     return null
 )
 
-window.onunload = ((evt) ->
-    if window.uname isnt undefined
-        socket.emit("logoff", {username:window.uname})
-    return null
-)
-
 $( window ).keydown ((evt) ->
     if evt.target.tagName.toLowerCase() is "input" or window.uname is undefined or
       evt.ctrlKey
@@ -52,16 +46,16 @@ $( window ).keydown ((evt) ->
             type = "turn"
         else
             type = "move"
-        socket.emit(type, {direction: direction, username: window.uname})
+        socket.emit(type, direction)
     else if fire
         if evt.shiftKey
             type = "bomb"
         else
             type = "fire"
-        socket.emit(type, {username: window.uname})
+        socket.emit(type)
     else if scan
-        socket.emit("scan", {username: window.uname})
+        socket.emit("scan")
     else if cloak
-        socket.emit("cloak", {username: window.uname})
+        socket.emit("cloak")
     return null
 )

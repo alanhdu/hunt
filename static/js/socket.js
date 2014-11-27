@@ -36,9 +36,7 @@
 
   window.onunload = (function(evt) {
     if (window.uname !== void 0) {
-      socket.emit("logoff", {
-        username: window.uname
-      });
+      socket.emit("logoff");
     }
     return null;
   });
@@ -82,27 +80,18 @@
       } else {
         type = "move";
       }
-      socket.emit(type, {
-        direction: direction,
-        username: window.uname
-      });
+      socket.emit(type, direction);
     } else if (fire) {
       if (evt.shiftKey) {
         type = "bomb";
       } else {
         type = "fire";
       }
-      socket.emit(type, {
-        username: window.uname
-      });
+      socket.emit(type);
     } else if (scan) {
-      socket.emit("scan", {
-        username: window.uname
-      });
+      socket.emit("scan");
     } else if (cloak) {
-      socket.emit("cloak", {
-        username: window.uname
-      });
+      socket.emit("cloak");
     }
     return null;
   }));

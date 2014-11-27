@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 
-
-
 {% block content %}
 <div class="content row">
     <div id="arena" class="col-md-8 square"></div>
@@ -18,7 +16,7 @@
 
 {% block scripts %}        
 {{super()}}
+<script type="text/javascript" src="{{ url_for('static', filename='js/util.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/socket.io-0.9.16.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/socket.js') }}"></script>
-
 {% endblock %}

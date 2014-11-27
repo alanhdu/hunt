@@ -1,8 +1,8 @@
 import gevent
 import markdown
-from flask import Flask, render_template, copy_current_request_context
+from flask import Flask, render_template, session
 from flask import Markup
-from flask.ext.socketio import SocketIO, join_room
+from flask.ext.socketio import SocketIO, join_room, emit
 
 import game
 import custom_exceptions as excpt
@@ -13,29 +13,26 @@ socketio = SocketIO(app)
 @socketio.on_error_default
 def exception_handler(value):
     if isinstance(value, excpt.UserError):
-        socketio.emit("error", str(value))
+        emit("error", str(value))
     else:
         raise value
 
 m = game.Game()
+def run(interval=0.025):
+    while True:
+        gevent.sleep(interval)
+        m.update()
+
+        emit = socketio.emit
+        jobs = [gevent.spawn(emit, "update",
+                     {"player": player.to_json(), "scores": m.to_json()},
+                     room=uname)
+                for uname, player in m.players.iteritems()]
+        gevent.joinall(jobs)
 
 @app.route("/")
-def index(interval=0.025):
-    @copy_current_request_context
-    def run():
-        while True:
-            gevent.sleep(interval)
-            m.update()
-
-            emit = socketio.emit
-            jobs = [gevent.spawn(emit, "update",
-                         {"player": player.to_json(), "scores": m.to_json()},
-                         room=uname)
-                    for uname, player in m.players.iteritems()]
-            gevent.joinall(jobs)
-
+def index():
     gevent.spawn(run)
-
     return render_template("play.html")
 
 @app.route("/instructions")
@@ -48,48 +45,52 @@ def instruct():
 
 @socketio.on("begin")
 def begin(msg):
-    m.addPlayer(msg["username"])
-    join_room(msg["username"])
+    if "username" in session:
+        raise excpt.AlreadyLoggedIn()
+    elif msg["username"] in m.players:
+        raise excpt.UsernameTaken(msg["username"])
+    else:
+        m.addPlayer(msg["username"])
+        session["username"] = msg["username"]
+        join_room(msg["username"])
 
-    socketio.emit("acknowledged", {}, room=msg["username"])
+        socketio.emit("acknowledged", {}, room=msg["username"])
 
-@socketio.on("logoff")
-def logoff(msg):
-    uname = msg["username"]
+@socketio.on("disconnect")
+def logoff():
+    uname = session["username"]
     del m.players[uname]
 
 @socketio.on("move")
-def move(msg):
-    direction = msg["direction"]
-    user = msg["username"]
-
+def move(direction):
+    user = session["username"]
     m.players[user].queue("move", direction)
 
 @socketio.on("turn")
-def turn(msg):
-    direction = msg["direction"]
-    user = msg["username"]
+def turn(direction):
+    user = session["username"]
     m.players[user].queue("turn", direction)
 
 @socketio.on("fire")
-def fire(msg):
-    user = msg["username"]
+def fire():
+    user = session["username"]
     m.players[user].queue("fire")
 
 @socketio.on("bomb")
-def bomb(msg):
-    user = msg["username"]
+def bomb():
+    user = session["username"]
     m.players[user].queue("bomb")
 
 @socketio.on("scan")
-def scan(msg):
-    user = msg["username"]
+def scan():
+    user = session["username"]
     m.players[user].scan = not m.players[user].scan
 
 @socketio.on("cloak")
-def cloak(msg):
-    user = msg["username"]
+def cloak():
+    user = session["username"]
     m.players[user].cloak = not m.players[user].cloak
 
 if __name__ == "__main__":
+    app.secret_key = "It's a secret!"
     socketio.run(app)
