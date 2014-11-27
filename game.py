@@ -1,7 +1,6 @@
 from __future__ import division
 from collections import namedtuple, deque
 import settings
-from decimal import Decimal
 from random import shuffle
 
 import numpy as np
@@ -189,7 +188,7 @@ class Game(object):
                          for y in xrange(height))
     def to_json(self):
         return {name: {"kills": player.kills, "deaths": player.deaths,
-                               "score": round(player.score, 3)}
+                               "score": player.score}
                         for name, player in self.players.iteritems()}
     def inArena(self, p):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
@@ -204,8 +203,7 @@ class Player(object):
     def __init__(self, game, name):
         self.game = game
         self.name = name
-        self.deaths = self.kills = 0
-        self.score = Decimal(0)
+        self.score = self.deaths = self.kills = 0
         self.cloak = self.scan = False
         self.rebirth()
 
@@ -395,8 +393,7 @@ class Player(object):
                 self.rebirth()
 
     def updateScore(self):
-        # use Decimal to avoid annoying scores like 0.000000000001
-        self.score = Decimal('0.9998') * self.score
+        self.score = 0.9998 * self.score
 
     def getView(self, x, y):
         c = self.game.arena[y, x]
