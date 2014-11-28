@@ -94,10 +94,13 @@ def debugMaze():
 
 
 class Game(object):
+    players, projectiles, arena = None, None, None
+    deleted = None
     def __init__(self, setting=settings.default, debug=False):
         self.settings = setting
         self.players = {}
         self.projectiles = []
+        self.deleted = deque()
 
         if not debug:
             self.arena = generate_maze(setting.w, setting.h)
@@ -143,6 +146,14 @@ class Game(object):
             player.updateScore()
             player.updateMask()
 
+        # regenerate walls
+        for i in xrange(len(self.deleted) - 15):
+            l = self.deleted.popleft()
+            if self.arena[l] not in "<>v^":
+                self.arena[l] = "*"
+            else:
+                self.deleted.append(left)
+
         # regenerate recharges
         while len(self.players) > (self.arena == 'A').sum():
             h, w = self.arena.shape
@@ -150,6 +161,7 @@ class Game(object):
             while self.arena[y, x] != " ":
                 y, x = np.random.randint(0, h), np.random.randint(0, w)
             self.arena[y, x] = "A"
+
 
     def updateProjectile(self, proj):
         render = {"bullet": ":", "bomb": "o"}
@@ -159,6 +171,7 @@ class Game(object):
         elif proj.type == "bullet":
             if self.arena[proj.pos] == "*" and self.inArena(proj.pos):
                 self.arena[proj.pos] = " "
+                self.deleted.append(proj.pos)
             elif self.arena[proj.pos] == "A":
                 self.arena[proj.pos] = " "
             elif self.arena[proj.pos] in "<>v^":
@@ -181,6 +194,10 @@ class Game(object):
             x_high = min(x + 2, w - 1)
 
             cs = self.arena[y_low:y_high, x_low:x_high]
+            for y in xrange(y_low, y_high):
+                for x in xrange(x_low, x_high):
+                    if self.arena[y, x] == " ":
+                        self.deleted.append(Point(y=y, x=x))
             cs[:] = "#"
 
     def __str__(self):

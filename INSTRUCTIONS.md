@@ -58,3 +58,4 @@ Misc.
   - There is one ammo pickup per player at all times. As soon as you pick up some ammo, another pickup appears somewhere else.
   - You can't see behind you. Turn around to get maximum vision.
   - You're born with 10 health and 15 ammo. Every time another player enters the arena, you gain 5 ammo.
+  - Walls eventually regenerate in the order that they are destroyed.

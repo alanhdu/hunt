@@ -65,6 +65,7 @@ def begin(msg):
 def logoff():
     if "username" in session:
         uname = session["username"]
+        m.arena[m.players[uname].pos] = " "
         del m.players[uname]
 
         global running
