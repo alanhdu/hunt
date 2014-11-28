@@ -159,6 +159,8 @@ class Game(object):
         elif proj.type == "bullet":
             if self.arena[proj.pos] == "*" and self.inArena(proj.pos):
                 self.arena[proj.pos] = " "
+            elif self.arena[proj.pos] == "A":
+                self.arena[proj.pos] = " "
             elif self.arena[proj.pos] in "<>v^":
                 player = self.findPlayer(proj.pos)
                 player.hit(proj.source, proj.type)
