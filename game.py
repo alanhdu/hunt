@@ -165,19 +165,17 @@ class Game(object):
 
     def updateProjectile(self, proj):
         render = {"bullet": ":", "bomb": "o"}
-        if self.arena[proj.pos] == " " and self.inArena(proj.pos):
+        if self.arena[proj.pos] in " A" and self.inArena(proj.pos):
             self.arena[proj.pos] = render[proj.type]
             self.projectiles.append(proj)
         elif proj.type == "bullet":
             if self.arena[proj.pos] == "*" and self.inArena(proj.pos):
                 self.arena[proj.pos] = " "
                 self.deleted.append(proj.pos)
-            elif self.arena[proj.pos] == "A":
-                self.arena[proj.pos] = " "
             elif self.arena[proj.pos] in "<>v^":
                 player = self.findPlayer(proj.pos)
                 player.hit(proj.source, proj.type)
-        elif proj.type == "bomb" and self.arena[proj.pos] in "A#<>v^*":
+        elif proj.type == "bomb" and self.arena[proj.pos] in "#<>v^*":
             y, x = proj.pos
 
             for player in self.players.values():
