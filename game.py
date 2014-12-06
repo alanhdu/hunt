@@ -67,7 +67,7 @@ def debugMaze():
     maze = """\
 *****************************************************
 *                        *                          *
-*                        *                          *
+*     A                  *                          *
 *                        *                          *
 *                        *                          *
 *                        *                          *
@@ -125,14 +125,10 @@ class Game(object):
                 if self.arena[y, x] == "#":
                     self.arena[y, x] = " "
 
-        # clear projectiles
+        # update projectiles
         for i in xrange(self.settings.pace):
-            for proj in self.projectiles:
-                self.arena[proj.pos] = " "
-
-            projectiles = [Projectile(move(proj.pos, proj.direction),
-                                      proj.direction, proj.source, proj.type)
-                           for proj in self.projectiles]
+            self.arena[(self.arena == "#") + (self.arena == ":") + (self.arena == "o")] = " "
+            projectiles = self.projectiles
             self.projectiles = []
             for proj in projectiles:
                 self.updateProjectile(proj)
@@ -165,38 +161,42 @@ class Game(object):
 
     def updateProjectile(self, proj):
         render = {"bullet": ":", "bomb": "o"}
-        if self.arena[proj.pos] in " A" and self.inArena(proj.pos):
-            self.arena[proj.pos] = render[proj.type]
-            self.projectiles.append(proj)
-        elif proj.type == "bullet":
-            if self.arena[proj.pos] == "*" and self.inArena(proj.pos):
-                self.arena[proj.pos] = " "
-                self.deleted.append(proj.pos)
-            elif self.arena[proj.pos] in "<>v^":
-                player = self.findPlayer(proj.pos)
-                player.hit(proj.source, proj.type)
-        elif proj.type == "bomb" and self.arena[proj.pos] in "#<>v^*":
-            y, x = proj.pos
-
-            for player in self.players.values():
-                py, px = player.pos
-                if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
+        proj = Projectile(move(proj.pos, proj.direction),
+                         proj.direction, proj.source, proj.type)
+        if self.inArena(proj.pos):
+            if self.arena[proj.pos] == " ":
+                self.arena[proj.pos] = render[proj.type]
+                self.projectiles.append(proj)
+            elif self.arena[proj.pos] == "A":
+                self.projectiles.append(proj)   # Let projectile pass by
+            elif proj.type == "bullet":
+                if self.arena[proj.pos] == "*":
+                    self.arena[proj.pos] = render[proj.type]
+                    self.deleted.append(proj.pos)
+                elif self.arena[proj.pos] in "<>v^":
+                    player = self.findPlayer(proj.pos)
                     player.hit(proj.source, proj.type)
+            elif proj.type == "bomb":
+                y, x = proj.pos
 
-            # prevent things from clearing the edges
-            h, w = self.arena.shape
-            y_low = max(y - 1, 1)
-            y_high = min(y + 2, h - 1)
+                for player in self.players.itervalues():
+                    py, px = player.pos
+                    if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
+                        player.hit(proj.source, proj.type)
 
-            x_low = max(x - 1, 1)
-            x_high = min(x + 2, w - 1)
+                # prevent things from clearing the edges
+                h, w = self.arena.shape
+                y_low = max(y - 1, 1)
+                y_high = min(y + 2, h - 1)
 
-            cs = self.arena[y_low:y_high, x_low:x_high]
-            for y in xrange(y_low, y_high):
-                for x in xrange(x_low, x_high):
-                    if self.arena[y, x] == " ":
-                        self.deleted.append(Point(y=y, x=x))
-            cs[:] = "#"
+                x_low = max(x - 1, 1)
+                x_high = min(x + 2, w - 1)
+
+                for y in xrange(y_low, y_high):
+                    for x in xrange(x_low, x_high):
+                        if self.arena[y, x] == "*":
+                            self.deleted.append(Point(y=y, x=x))
+                        self.arena[y,x] = "#"
 
     def __str__(self):
         height, width = self.arena.shape
@@ -359,14 +359,12 @@ class Player(object):
         self.game.arena[self.pos] = self.facing
 
     def fire(self, type):
-        pos = move(self.pos, self.facing)
-        if self.game.inArena(pos):
-            if self.ammo >= self.game.settings.ammo[type]:
-                proj = Projectile(pos, self.facing, self, type)
-                self.ammo -= self.game.settings.ammo[type]
-                self.game.updateProjectile(proj)
-            else:
-                self.msg = "You don't have enough ammo for a {}".format(type)
+        if self.ammo >= self.game.settings.ammo[type]:
+            proj = Projectile(self.pos, self.facing, self, type)
+            self.ammo -= self.game.settings.ammo[type]
+            self.game.updateProjectile(proj)
+        else:
+            self.msg = "You don't have enough ammo for a {}".format(type)
 
     def hit(self, src, method):
         self.health -= self.game.settings.damage[method]

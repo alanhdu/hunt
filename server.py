@@ -9,6 +9,7 @@ import custom_exceptions as excpt
 
 app = Flask(__name__)
 app.secret_key = "It's a secret!"
+app.debug = True
 socketio = SocketIO(app)
 
 @socketio.on_error_default
@@ -18,7 +19,7 @@ def exception_handler(value):
     else:
         raise value
 
-m = game.Game()
+m = game.Game(debug=True)
 running = None
 def run(interval=0.025):
     while True:
