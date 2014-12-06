@@ -19,7 +19,7 @@ def exception_handler(value):
     else:
         raise value
 
-m = game.Game(debug=True)
+m = game.Game()
 running = None
 def run(interval=0.025):
     while True:

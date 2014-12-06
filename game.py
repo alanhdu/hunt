@@ -118,16 +118,10 @@ class Game(object):
                 return player
 
     def update(self):
-        # clear explosions
-        height, width = self.arena.shape
-        for x in xrange(width):
-            for y in xrange(height):
-                if self.arena[y, x] == "#":
-                    self.arena[y, x] = " "
-
         # update projectiles
         for i in xrange(self.settings.pace):
-            self.arena[(self.arena == "#") + (self.arena == ":") + (self.arena == "o")] = " "
+            clear = (self.arena == "#") + (self.arena == ":") + (self.arena == "o")
+            self.arena[clear] = " "
             projectiles = self.projectiles
             self.projectiles = []
             for proj in projectiles:
@@ -150,13 +144,13 @@ class Game(object):
             else:
                 self.deleted.append(left)
 
-        # regenerate recharges
+        # regenerate ammo recharges
         while len(self.players) > (self.arena == 'A').sum():
             h, w = self.arena.shape
-            y, x = np.random.randint(0, h), np.random.randint(0, w)
-            while self.arena[y, x] != " ":
-                y, x = np.random.randint(0, h), np.random.randint(0, w)
-            self.arena[y, x] = "A"
+            pos = np.random.randint(0, h), np.random.randint(0, w)
+            while self.arena[pos] != " ":
+                pos = np.random.randint(0, h), np.random.randint(0, w)
+            self.arena[pos] = "A"
 
 
     def updateProjectile(self, proj):
