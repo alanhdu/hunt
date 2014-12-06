@@ -17,7 +17,7 @@ def exception_handler(value):
     if isinstance(value, excpt.UserError):
         emit("error", str(value))
     else:
-        raise value
+        raise
 
 m = game.Game()
 running = None

@@ -134,7 +134,7 @@ class Game(object):
         # Update scores
         for player in self.players.itervalues():
             player.updateScore()
-            player.updateMask()
+            player.updateView()
 
         # regenerate walls
         for i in xrange(len(self.deleted) - 15):
@@ -209,7 +209,6 @@ class Player(object):
     game, name, deaths, score, cloak = None, None, None, None, None
     view, ammo, kills, pos, facing = None, None, None, None, None
     actions, lastActionTime, msg, health = None, None, None, None
-    currentView = None
 
     def __init__(self, game, name):
         self.game = game
@@ -227,11 +226,9 @@ class Player(object):
         self.game.arena[self.pos] = self.facing
 
         # ensure visible edges
-        mask = np.zeros((h, w), dtype=bool)
-        mask[1:-1, 1:-1] = -np.zeros((h-2, w-2), dtype=bool)
-
-        self.view = np.ma.masked_array(self.game.arena, mask)
-        self.updateMask()
+        self.view = np.repeat("*", self.game.arena.size).reshape(self.game.arena.shape)
+        self.view[1:-1, 1:-1] = " "
+        self.updateView()
 
         self.actions = deque()
         self.lastActionTime = 0
@@ -242,14 +239,15 @@ class Player(object):
         for player in self.game.players.itervalues():
             player.ammo += 5
 
-    def updateMask(self):
-        y, x = self.pos
+    def updateView(self):
         if self.game.arena[self.pos] == "*":
             raise excpt.HittingAWall()
-        row = self.game.arena[y, :]
-        col = self.game.arena[:, x]
 
-        mask = np.zeros(self.game.arena.shape, dtype=bool)
+        clear = np.zeros(shape=self.view.shape, dtype=bool)
+        for c in "<>v^:o":
+            clear += (self.view == c)
+        self.view[clear] = " "
+
 
         def stopper(array):
             b = np.zeros(array.shape, dtype=bool)
@@ -257,31 +255,47 @@ class Player(object):
                 b += (array == stop)
             return b
 
-        if self.facing != "v":
-            mask[:y, x] = (stopper(col[y - 1::-1]).cumsum() == 0)[::-1]
-        if self.facing != "^":
-            mask[y+1:, x] = stopper(col[y + 1:]).cumsum() == 0
-        if self.facing != ">":
-            mask[y, :x] = (stopper(row[x - 1::-1]).cumsum() == 0)[::-1]
-        if self.facing != "<":
-            mask[y, x+1:] = stopper(row[x + 1:]).cumsum() == 0
+        h, w = self.game.arena.shape
+        y, x = self.pos
 
-        mask[y, x] = True
+        stopper = np.zeros(shape=self.view.shape, dtype=bool)
+        for c in "<>v^*":
+            stopper += (self.game.arena == c)
+
+        def update(s):
+            stop = stopper[s].cumsum() > 0
+            # we want the first 1 to be visible, but not all the rest
+            # e.g. [0,0,0,1,1,1,...] -> [F,F,F,F,T,T,...]
+            stop = stop.cumsum() > 1
+            def _update(n):
+                self.view[n] = np.where(stop, self.view[n], self.game.arena[n])
+            _update(s)
+
+            # do one above and one below 
+            if isinstance(s[1], slice):
+                _update((s[0] + 1, s[1]))
+                _update((s[0] - 1, s[1]))
+            elif isinstance(s[0], slice):
+                _update((s[0], s[1] - 1))
+                _update((s[0], s[1] + 1))
+
+        if self.facing != "^":
+            update(np.s_[y + 1:, x])
+        if self.facing != "v":
+            update(np.s_[y-1::-1, x])
+        if self.facing != "<":
+            update(np.s_[y, x + 1:])
+        if self.facing != ">":
+            update(np.s_[y, x-1::-1])
+
+        # See everything immediately around you
+        self.view[y-1:y+2, x-1:x+2] = self.game.arena[y-1:y+2, x-1:x+2]
 
         # Scan for other player's locations
         if self.scan:
             for player in self.game.players.itervalues():
                 if not player.cloak:
-                    mask[player.pos] = True
-
-        # Expand all masks so you can see the walls
-        mask[1:-1, 1:-1] = (mask[:-2,  :-2] + mask[:-2, 1:-1] + mask[:-2,  2:] +
-                            mask[1:-1, :-2] + mask[1:-1,1:-1] + mask[1:-1, 2:] +
-                            mask[2:,   :-2] + mask[2:,  1:-1] + mask[2:,   2:])
-
-        # Flip so True -> Masked & Invisible
-        self.currentView = -mask
-        self.view.mask *= -mask
+                    self.view[player.pos] = self.game.arena[player.pos]
 
     def queue(self, action, *args, **kwargs):
         if len(self.actions) > 5:       # only queue 5 actions at a time
@@ -311,7 +325,7 @@ class Player(object):
         else:
             self.lastActionTime += self.game.settings.pace
 
-        self.updateMask()
+        self.updateView()
 
     def move(self, direction):
         self.game.arena[self.pos] = ' '
@@ -335,21 +349,20 @@ class Player(object):
         if self.game.inArena(p):
             if self.game.arena[p] == " ":
                 self.pos = p
-                self.updateMask()
             if self.game.arena[p] == "A":
                 self.ammo += self.game.settings.ammo["recharge"]
                 self.pos = p
-                self.updateMask()
             elif self.game.arena[p] in "<>v^" and direction == self.facing:
                 # if we're facing someone and move into them, stab
                 other = self.game.findPlayer(p)
                 other.hit(self, "stab")
 
         self.game.arena[self.pos] = self.facing
+        self.updateView()
 
     def turn(self, direction):
         self.facing = direction
-        self.updateMask()
+        self.updateView()
         self.game.arena[self.pos] = self.facing
 
     def fire(self, type):
@@ -404,18 +417,9 @@ class Player(object):
     def updateScore(self):
         self.score = 0.9998 * self.score
 
-    def getView(self, x, y):
-        c = self.game.arena[y, x]
-        if not self.currentView[y, x]:
-            return c
-        elif not self.view.mask[y, x] and c == "*":  # walls of arena
-            return c
-        else:
-            return " "
-
     def __str__(self):
         h, w = self.view.shape
-        s = "\n".join("".join(self.getView(x, y)
+        s = "\n".join("".join(self.view[y, x]
                               for x in xrange(w))
                       for y in xrange(h))
         return s
