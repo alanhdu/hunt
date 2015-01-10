@@ -131,11 +131,6 @@ class Game(object):
         for player in self.players.itervalues():
             player.update()
 
-        # Update scores
-        for player in self.players.itervalues():
-            player.updateScore()
-            player.updateView()
-
         # regenerate walls
         for i in xrange(len(self.deleted) - 15):
             l = self.deleted.popleft()
@@ -151,6 +146,11 @@ class Game(object):
             while self.arena[pos] != " ":
                 pos = np.random.randint(0, h), np.random.randint(0, w)
             self.arena[pos] = "A"
+
+        # Update scores
+        for player in self.players.itervalues():
+            player.updateScore()
+            player.updateView()
 
 
     def updateProjectile(self, proj):
@@ -206,9 +206,10 @@ class Game(object):
         return in_arena(p, self.arena)
 
 class Player(object):
-    game, name, deaths, score, cloak = None, None, None, None, None
-    view, ammo, kills, pos, facing = None, None, None, None, None
-    actions, lastActionTime, msg, health = None, None, None, None
+    game, name, deaths, score, cloak, msg = None, None, None, None, None, None
+    view, ammo, kills, pos, facing, health = None, None, None, None, None, None
+    actions, lastActionTime = None, None, None
+
 
     def __init__(self, game, name):
         self.game = game
@@ -262,7 +263,7 @@ class Player(object):
         for c in "<>v^*":
             stopper += (self.game.arena == c)
 
-        def update(s):
+        def _updateView(s):
             stop = stopper[s].cumsum() > 0
             # we want the first 1 to be visible, but not all the rest
             # e.g. [0,0,0,1,1,1,...] -> [F,F,F,F,T,T,...]
@@ -280,13 +281,13 @@ class Player(object):
                 _update((s[0], s[1] + 1))
 
         if self.facing != "^":
-            update(np.s_[y + 1:, x])
+            _updateView(np.s_[y + 1:, x])
         if self.facing != "v":
-            update(np.s_[y-1::-1, x])
+            _updateView(np.s_[y-1::-1, x])
         if self.facing != "<":
-            update(np.s_[y, x + 1:])
+            _updateView(np.s_[y, x + 1:])
         if self.facing != ">":
-            update(np.s_[y, x-1::-1])
+            _updateView(np.s_[y, x-1::-1])
 
         # See everything immediately around you
         self.view[y-1:y+2, x-1:x+2] = self.game.arena[y-1:y+2, x-1:x+2]
@@ -324,8 +325,6 @@ class Player(object):
                 self.lastActionTime += self.game.settings.pace
         else:
             self.lastActionTime += self.game.settings.pace
-
-        self.updateView()
 
     def move(self, direction):
         self.game.arena[self.pos] = ' '
