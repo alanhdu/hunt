@@ -2,9 +2,9 @@ import gevent
 import markdown
 from flask import Flask, render_template, session
 from flask import Markup
-from flask.ext.socketio import SocketIO, join_room, emit
+from flask.ext.socketio import SocketIO, join_room, emit, close_room
 
-import game
+from game import Game
 import custom_exceptions as excpt
 
 app = Flask(__name__)
@@ -19,18 +19,18 @@ def exception_handler(value):
     else:
         raise
 
-m = game.Game()
+game = Game()
 running = None
 def run(interval=0.025):
     while True:
         gevent.sleep(interval)
-        m.update()
+        game.update()
 
         emit = socketio.emit
         jobs = [gevent.spawn(emit, "update",
-                     {"player": player.to_json(), "scores": m.to_json()},
+                     {"player": player.to_json(), "scores": game.to_json()},
                      room=uname)
-                for uname, player in m.players.iteritems()]
+                for uname, player in game.players.iteritems()]
         gevent.joinall(jobs)
 
 @app.route("/")
@@ -49,10 +49,10 @@ def instruct():
 def begin(msg):
     if "username" in session:
         raise excpt.AlreadyLoggedIn()
-    elif msg["username"] in m.players:
+    elif msg["username"] in game.players:
         raise excpt.UsernameTaken(msg["username"])
     else:
-        m.addPlayer(msg["username"])
+        game.addPlayer(msg["username"])
         session["username"] = msg["username"]
         join_room(msg["username"])
 
@@ -66,43 +66,44 @@ def begin(msg):
 def logoff():
     if "username" in session:
         uname = session["username"]
-        m.arena[m.players[uname].pos] = " "
-        del m.players[uname]
+        game.arena[game.players[uname].pos] = " "
+        del game.players[uname]
+        close_room(uname)
 
         global running
-        if not m.players:
+        if not game.players:
             running.kill()
             running = None
 
 @socketio.on("move")
 def move(direction):
     user = session["username"]
-    m.players[user].queue("move", direction)
+    game.players[user].queue("move", direction)
 
 @socketio.on("turn")
 def turn(direction):
     user = session["username"]
-    m.players[user].queue("turn", direction)
+    game.players[user].queue("turn", direction)
 
 @socketio.on("fire")
 def fire():
     user = session["username"]
-    m.players[user].queue("fire")
+    game.players[user].queue("fire")
 
 @socketio.on("bomb")
 def bomb():
     user = session["username"]
-    m.players[user].queue("bomb")
+    game.players[user].queue("bomb")
 
 @socketio.on("scan")
 def scan():
     user = session["username"]
-    m.players[user].scan = not m.players[user].scan
+    game.players[user].scan = not game.players[user].scan
 
 @socketio.on("cloak")
 def cloak():
     user = session["username"]
-    m.players[user].cloak = not m.players[user].cloak
+    game.players[user].cloak = not game.players[user].cloak
 
 if __name__ == "__main__":
     socketio.run(app)
