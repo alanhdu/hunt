@@ -1,7 +1,7 @@
 Instructions (for real)
 =========
 
-Hunt is a maze-based multiplayer game. You move around the maze and try to find and kill other players with bullets, bombs, and stabs. The entire maze is not visible: as you move around the maze, you will see 
+Hunt is a maze-based multiplayer game. You move around the maze and try to find and kill other players with bullets, bombs, and stabs. The entire maze is not visible: as you move around the maze, more of the maze will be revealed.
 
 Controls
 ----
