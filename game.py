@@ -208,7 +208,7 @@ class Game(object):
 class Player(object):
     game, name, deaths, score, cloak, msg = None, None, None, None, None, None
     view, ammo, kills, pos, facing, health = None, None, None, None, None, None
-    actions, lastActionTime = None, None, None
+    actions, lastActionTime = None, None
 
 
     def __init__(self, game, name):
@@ -248,13 +248,6 @@ class Player(object):
         for c in "<>v^:o":
             clear += (self.view == c)
         self.view[clear] = " "
-
-
-        def stopper(array):
-            b = np.zeros(array.shape, dtype=bool)
-            for stop in "*v^<>":
-                b += (array == stop)
-            return b
 
         h, w = self.game.arena.shape
         y, x = self.pos
