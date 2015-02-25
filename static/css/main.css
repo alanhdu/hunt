@@ -20,8 +20,8 @@ code {
 }
 
 .square {
-    font-family: square, monospace;
-    text-align:center;
+    font-family: monospace;
+    text-align: center;
 }
 
 .rect {
