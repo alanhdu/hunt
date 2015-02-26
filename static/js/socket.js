@@ -5,7 +5,7 @@
   socket = io.connect();
 
   socket.on("error", (function(err) {
-    return alert(err);
+    return alert(JSON.stringify(err));
   }));
 
   socket.on("update", update);
