@@ -4,8 +4,8 @@
 
   socket = io.connect();
 
-  socket.on("error", (function(err) {
-    return alert(JSON.stringify(err));
+  socket.on("python_error", (function(err) {
+    return alert(err);
   }));
 
   socket.on("update", update);

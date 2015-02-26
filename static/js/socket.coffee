@@ -1,6 +1,6 @@
 socket = io.connect()
 
-socket.on("error", ((err) -> alert(err)))
+socket.on("python_error", ((err) -> alert(err)))
 socket.on("update", update)
 socket.on("acknowledged", (info) ->
     window.uname = $("#username").val())

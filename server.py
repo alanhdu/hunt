@@ -15,7 +15,7 @@ socketio = SocketIO(app)
 @socketio.on_error_default
 def exception_handler(value):
     if isinstance(value, excpt.UserError):
-        emit("error", str(value))
+        emit("python_error", str(value))
     else:
         raise
 
