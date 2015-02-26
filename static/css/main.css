@@ -17,10 +17,13 @@ code {
 
 #arena {
     font-size: 2vmin;
+    background-color: #000000;
+    color: #FFFFFF;
+    border: 0;
 }
 
 .square {
-    font-family: monospace;
+    font-family: square, monospace;
     text-align: center;
 }
 

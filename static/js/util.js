@@ -66,7 +66,7 @@
   getType = function(char, arena, x, y) {
     var bot, height, left, pos, right, top, type, visible, width;
     if (char !== "#" && char !== "*") {
-      return escape(char);
+      return char;
     }
     height = (arena.split("\n").length);
     width = (arena.length - height + 1) / height;

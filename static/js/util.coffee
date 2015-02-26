@@ -42,7 +42,7 @@ displayArena = (arena, curX, curY) ->
 
 getType = (char, arena, x , y) ->
     if char isnt "#" and char isnt "*"
-        return escape(char)
+        return char
 
     height = (arena.split("\n").length)
     width = (arena.length - height + 1) / height
