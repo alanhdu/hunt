@@ -12,6 +12,7 @@ app.secret_key = "It's a secret!"
 app.debug = True
 socketio = SocketIO(app)
 
+
 @socketio.on_error_default
 def exception_handler(value):
     if isinstance(value, excpt.UserError):
@@ -27,15 +28,18 @@ def run(interval=0.025):
         game.update()
 
         emit = socketio.emit
+        scores = game.to_json()
         jobs = [gevent.spawn(emit, "update",
-                     {"player": player.to_json(), "scores": game.to_json()},
-                     room=uname)
+                             {"player": player.to_json(), "scores": scores},
+                             room=uname)
                 for uname, player in game.players.iteritems()]
         gevent.joinall(jobs)
+
 
 @app.route("/")
 def index():
     return render_template("play.html")
+
 
 @app.route("/instructions")
 def instruct():
@@ -44,6 +48,7 @@ def instruct():
         content = content.replace("<code>", "<code class='square'>")
         # Markup to escape html characters
         return render_template("instructions.html", content=Markup(content))
+
 
 @socketio.on("begin")
 def begin(msg):
@@ -62,6 +67,7 @@ def begin(msg):
     if running is None:
         running = gevent.spawn(run)
 
+
 @socketio.on("disconnect")
 def logoff():
     if "username" in session:
@@ -75,30 +81,36 @@ def logoff():
             running.kill()
             running = None
 
+
 @socketio.on("move")
 def move(direction):
     user = session["username"]
     game.players[user].queue("move", direction)
+
 
 @socketio.on("turn")
 def turn(direction):
     user = session["username"]
     game.players[user].queue("turn", direction)
 
+
 @socketio.on("fire")
 def fire():
     user = session["username"]
     game.players[user].queue("fire")
+
 
 @socketio.on("bomb")
 def bomb():
     user = session["username"]
     game.players[user].queue("bomb")
 
+
 @socketio.on("scan")
 def scan():
     user = session["username"]
     game.players[user].scan = not game.players[user].scan
+
 
 @socketio.on("cloak")
 def cloak():

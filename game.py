@@ -10,9 +10,11 @@ import custom_exceptions as excpt
 Point = namedtuple("Point", ["y", "x"])
 Projectile = namedtuple("Projectile", ["pos", "direction", "source", "type"])
 
+
 def in_arena(p, arena):
     # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
     return all(0 < a < b - 1 for a, b in zip(p, arena.shape))
+
 
 def move(p, direction):
     if direction == "<":
@@ -25,6 +27,7 @@ def move(p, direction):
         return Point(x=p.x, y=p.y+1)
     else:
         raise ValueError("Direction must be <>v^. Got " + direction)
+
 
 def generate_maze(width, height):
     if width % 2 == 0:
@@ -96,6 +99,7 @@ def debugMaze():
 class Game(object):
     players, projectiles, arena = None, None, None
     deleted = None
+
     def __init__(self, setting=settings.default, debug=False):
         self.settings = setting
         self.players = {}
@@ -119,11 +123,11 @@ class Game(object):
 
     def update(self):
         # update projectiles
+        arena = self.arena
         for i in xrange(self.settings.pace):
-            clear = (self.arena == "#") + (self.arena == ":") + (self.arena == "o")
-            self.arena[clear] = " "
-            projectiles = self.projectiles
-            self.projectiles = []
+            clear = (arena == "#") + (arena == ":") + (arena == "o")
+            arena[clear] = " "
+            projectiles, self.projectiles = self.projectiles, []
             for proj in projectiles:
                 self.updateProjectile(proj)
 
@@ -137,7 +141,8 @@ class Game(object):
             if self.arena[l] not in "<>v^":
                 self.arena[l] = "*"
             else:
-                self.deleted.append(left)
+                # put l back in stack
+                self.deleted.append(l)
 
         # regenerate ammo recharges
         while len(self.players) > (self.arena == 'A').sum():
@@ -152,11 +157,10 @@ class Game(object):
             player.updateScore()
             player.updateView()
 
-
     def updateProjectile(self, proj):
         render = {"bullet": ":", "bomb": "o"}
         proj = Projectile(move(proj.pos, proj.direction),
-                         proj.direction, proj.source, proj.type)
+                          proj.direction, proj.source, proj.type)
         if self.inArena(proj.pos):
             if self.arena[proj.pos] == " ":
                 self.arena[proj.pos] = render[proj.type]
@@ -190,26 +194,28 @@ class Game(object):
                     for x in xrange(x_low, x_high):
                         if self.arena[y, x] == "*":
                             self.deleted.append(Point(y=y, x=x))
-                        self.arena[y,x] = "#"
+                        self.arena[y, x] = "#"
 
     def __str__(self):
         height, width = self.arena.shape
         return "\n".join("".join(self.arena[y, x]
                                  for x in xrange(width))
                          for y in xrange(height))
+
     def to_json(self):
         return {name: {"kills": player.kills, "deaths": player.deaths,
-                               "score": player.score}
-                        for name, player in self.players.iteritems()}
+                       "score": player.score}
+                for name, player in self.players.iteritems()}
+
     def inArena(self, p):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
         return in_arena(p, self.arena)
+
 
 class Player(object):
     game, name, deaths, score, cloak, msg = None, None, None, None, None, None
     view, ammo, kills, pos, facing, health = None, None, None, None, None, None
     actions, lastActionTime = None, None
-
 
     def __init__(self, game, name):
         self.game = game
@@ -227,7 +233,8 @@ class Player(object):
         self.game.arena[self.pos] = self.facing
 
         # ensure visible edges
-        self.view = np.repeat("*", self.game.arena.size).reshape(self.game.arena.shape)
+        self.view = np.repeat("*", self.game.arena.size)
+        self.view = self.view.reshape(self.game.arena.shape)
         self.view[1:-1, 1:-1] = " "
         self.updateView()
 
@@ -261,11 +268,12 @@ class Player(object):
             # we want the first 1 to be visible, but not all the rest
             # e.g. [0,0,0,1,1,1,...] -> [F,F,F,F,T,T,...]
             stop = stop.cumsum() > 1
+
             def _update(n):
                 self.view[n] = np.where(stop, self.view[n], self.game.arena[n])
             _update(s)
 
-            # do one above and one below 
+            # do one above and one below
             if isinstance(s[1], slice):
                 _update((s[0] + 1, s[1]))
                 _update((s[0] - 1, s[1]))
@@ -323,7 +331,7 @@ class Player(object):
         self.game.arena[self.pos] = ' '
         p = move(self.pos, direction)
 
-        if self.cloak :
+        if self.cloak:
             if self.ammo >= self.game.settings.ammo["cloak"]:
                 self.ammo -= self.game.settings.ammo["cloak"]
             else:
@@ -418,9 +426,9 @@ class Player(object):
 
     def to_json(self):
         d = {"arena": str(self), "ammo": self.ammo, "health": self.health,
-             "x": self.pos.x, "y": self.pos.y, "cloak": self.cloak, 
+             "x": self.pos.x, "y": self.pos.y, "cloak": self.cloak,
              "scan": self.scan}
-        if self.msg:
+        if self.msg is not None:
             d["msg"] = self.msg
 
         return d
