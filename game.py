@@ -140,8 +140,7 @@ class Game(object):
             l = self.deleted.popleft()
             if self.arena[l] not in "<>v^":
                 self.arena[l] = "*"
-            else:
-                # put l back in stack
+            else:   # don't regenerate wall on top of player
                 self.deleted.append(l)
 
         # regenerate ammo recharges
@@ -157,10 +156,11 @@ class Game(object):
             player.updateScore()
             player.updateView()
 
-    def updateProjectile(self, proj):
+    def updateProjectile(self, old_proj):
         render = {"bullet": ":", "bomb": "o"}
-        proj = Projectile(move(proj.pos, proj.direction),
-                          proj.direction, proj.source, proj.type)
+        proj = Projectile(move(old_proj.pos, old_proj.direction),
+                               old_proj.direction, old_proj.source, 
+                               old_proj.type)
         if self.inArena(proj.pos):
             if self.arena[proj.pos] == " ":
                 self.arena[proj.pos] = render[proj.type]
@@ -195,6 +195,20 @@ class Game(object):
                         if self.arena[y, x] == "*":
                             self.deleted.append(Point(y=y, x=x))
                         self.arena[y, x] = "#"
+        elif proj.type == "bomb":   # bomb hitting an edge
+            y, x = old_proj.pos
+            h, w = self.arena.shape
+            y_low = max(y - 1, 1)
+            y_high = min(y + 2, h - 1)
+
+            x_low = max(x - 1, 1)
+            x_high = min(x + 2, w - 1)
+
+            for y in xrange(y_low, y_high):
+                for x in xrange(x_low, x_high):
+                    if self.arena[y, x] == "*":
+                        self.deleted.append(Point(y=y, x=x))
+                    self.arena[y, x] = "#"
 
     def __str__(self):
         height, width = self.arena.shape
