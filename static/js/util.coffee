@@ -46,23 +46,29 @@ displayArena = (arena, curX, curY) ->
             x += 1
     return str
 
-getPos = (x, y) -> y * (width + 1) + x
 
 getType = (char, arena, x , y) ->
     if char isnt "#" and char isnt "*"
         return char
-
-    pos = getPos(x, y)
-    top = getPos(x, y - 1)
-    bot = getPos(x, y + 1)
-    left = getPos(x - 1, y)
-    right = getPos(x + 1, y)
+    getPos = (x, y) ->
+        # Use e for edges/corners of arena
+        if x < 0 or x >= width
+            return undefined
+        else if x == 0 or x == width - 1
+            return 'e'
+        if y < 0 or y >= height
+            return undefined
+        else if y == 0 or y == height - 1
+            return 'e'
+        return arena[y * (width + 1) + x]
 
     if char is '*'
         type = 0
-        if arena[left] is '*' or arena[right] is '*'
+        good = (a, b) -> getPos(a, b) is '*' or getPos(a, b) is 'e'
+
+        if good(x - 1, y) or good(x + 1, y)
             type += 1
-        if arena[top] is '*' or arena[bot] is '*'
+        if good(x, y - 1) or good(x, y + 1)
             type += 2
 
         return (switch type
@@ -74,25 +80,25 @@ getType = (char, arena, x , y) ->
         #      ###      \|/
         # turn ### into -*-
         #      ###      /|\
-        visible = (x) -> (x is '#')
+        visible = (x, y) -> getPos(x, y) is '#' or getPos(x, y) is 'e'
         
-        if visible(arena[left])
-            if visible(arena[right])  # middle column
-                if visible(arena[top]) and visible(arena[bot])
+        if visible(x - 1, y)
+            if visible(x + 1, y)  # middle column
+                if visible(x, y + 1) and visible(x, y - 1)
                     return '*'
                 else
                     return '|'
             else                    # right-most column
-                if visible(arena[top])
-                    if visible(arena[bot])
+                if visible(x, y - 1)
+                    if visible(x, y + 1)
                         return '-'
                     else
                         return '\\'
                 else
                     return '/'
         else    # left-most column
-            if visible(arena[top])
-                if visible(arena[bot])
+            if visible(x, y - 1)
+                if visible(x, y + 1)
                     return '-'
                 else
                     return '/'
