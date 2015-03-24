@@ -1,0 +1,15 @@
+flask=0.10.1=py27_1
+gevent=1.0.1=py27_0
+greenlet=0.4.5=py27_0
+gunicorn=19.1.0=py27_0
+itsdangerous=0.24=py27_0
+jinja2=2.7.3=py27_1
+markdown=2.6.1=py27_0
+markupsafe=0.23=py27_0
+numpy=1.9.2=py27_0
+openssl=1.0.1k=1
+pastedeploy=1.5.2=py27_1
+pip=6.0.8=py27_0
+python=2.7.9=2
+readline=6.2=2
+werkzeug=0.10.1=py27_0
