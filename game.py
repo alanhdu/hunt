@@ -98,7 +98,7 @@ def debugMaze():
 
 class Game(object):
     players, projectiles, arena = None, None, None
-    deleted = None
+    deleted, thread = None, None
 
     def __init__(self, setting=settings.default, debug=False):
         self.settings = setting

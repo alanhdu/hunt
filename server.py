@@ -45,13 +45,14 @@ def index():
 def instruct():
     with open("INSTRUCTIONS.md") as fin:
         content = markdown.markdown(fin.read())
-        content = content.replace("<code>", "<code class='square'>")
+        content = Markup(content.replace("<code>", "<code class='square'>"))
         # Markup to escape html characters
-        return render_template("instructions.html", content=Markup(content))
+        return render_template("instructions.html", content=content)
 
 
 @socketio.on("begin")
 def begin(msg):
+    global game
     if "username" in session:
         raise excpt.AlreadyLoggedIn()
     elif msg["username"] in game.players:
@@ -63,23 +64,22 @@ def begin(msg):
 
         socketio.emit("acknowledged", {}, room=msg["username"])
 
-    global running
-    if running is None:
-        running = gevent.spawn(run)
+    if game.thread is None:
+        game.thread = gevent.spawn(run)
 
 
 @socketio.on("disconnect")
 def logoff():
+    global game
     if "username" in session:
         uname = session["username"]
         game.arena[game.players[uname].pos] = " "
-        del game.players[uname]
+        game.players.pop(uname)
         close_room(uname)
 
-        global running
-        if not game.players:
-            running.kill()
-            running = None
+    if not game.players:  
+         game.thread.kill()
+         game = Game()  # reset board
 
 
 @socketio.on("move")
