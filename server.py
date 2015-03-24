@@ -22,7 +22,7 @@ def exception_handler(value):
 
 game = Game()
 running = None
-def run(interval=0.025):
+def run(interval=0.04):
     while True:
         gevent.sleep(interval)
         game.update()
