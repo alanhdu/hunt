@@ -22,10 +22,16 @@ $( "#square" ).on "click", (() ->
         document.getElementById(key).innerHTML = ""
     return null
 
+height = 0
+width = 0
+
 displayArena = (arena, curX, curY) ->
     x = 0
     y = 0
     str = ""
+    height = (arena.split("\n").length)
+    width = (arena.length - height + 1) / height
+
     for char in arena
         s = getType(char, arena, x, y)
 
@@ -40,18 +46,17 @@ displayArena = (arena, curX, curY) ->
             x += 1
     return str
 
+getPos = (x, y) -> y * (width + 1) + x
+
 getType = (char, arena, x , y) ->
     if char isnt "#" and char isnt "*"
         return char
 
-    height = (arena.split("\n").length)
-    width = (arena.length - height + 1) / height
-    pos = y * (width + 1) + x
-    top = pos - width - 1
-    bot = pos + width + 1
-    left = pos - 1
-    right = pos + 1
-
+    pos = getPos(x, y)
+    top = getPos(x, y - 1)
+    bot = getPos(x, y + 1)
+    left = getPos(x - 1, y)
+    right = getPos(x + 1, y)
 
     if char is '*'
         type = 0
@@ -69,7 +74,7 @@ getType = (char, arena, x , y) ->
         #      ###      \|/
         # turn ### into -*-
         #      ###      /|\
-        visible = (x) -> (x is '#' or x is '#')
+        visible = (x) -> (x is '#')
         
         if visible(arena[left])
             if visible(arena[right])  # middle column
