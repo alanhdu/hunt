@@ -111,12 +111,12 @@ class Game(object):
         else:
             self.arena = debugMaze()
 
-    def addPlayer(self, username):
+    def add_player(self, username):
         if username in self.players:
             raise excpt.UsernameTaken(username)
         self.players[username] = Player(self, username)
 
-    def findPlayer(self, pos):
+    def find_player(self, pos):
         for player in self.players.itervalues():
             if player.pos == pos:
                 return player
@@ -129,7 +129,7 @@ class Game(object):
             arena[clear] = " "
             projectiles, self.projectiles = self.projectiles, []
             for proj in projectiles:
-                self.updateProjectile(proj)
+                self.update_projectile(proj)
 
         # Update player movements
         for player in self.players.itervalues():
@@ -153,15 +153,15 @@ class Game(object):
 
         # Update scores
         for player in self.players.itervalues():
-            player.updateScore()
-            player.updateView()
+            player.update_score()
+            player.update_view()
 
-    def updateProjectile(self, old_proj):
+    def update_projectile(self, old_proj):
         render = {"bullet": ":", "bomb": "o"}
         proj = Projectile(move(old_proj.pos, old_proj.direction),
                                old_proj.direction, old_proj.source, 
                                old_proj.type)
-        if self.inArena(proj.pos):
+        if self.in_arena(proj.pos):
             if self.arena[proj.pos] == " ":
                 self.arena[proj.pos] = render[proj.type]
                 self.projectiles.append(proj)
@@ -172,7 +172,7 @@ class Game(object):
                     self.arena[proj.pos] = render[proj.type]
                     self.deleted.append(proj.pos)
                 elif self.arena[proj.pos] in "<>v^":
-                    player = self.findPlayer(proj.pos)
+                    player = self.find_player(proj.pos)
                     player.hit(proj.source, proj.type)
             elif proj.type == "bomb":
                 y, x = proj.pos
@@ -221,7 +221,7 @@ class Game(object):
                        "score": player.score}
                 for name, player in self.players.iteritems()}
 
-    def inArena(self, p):
+    def in_arena(self, p):
         # don't allow things to hit the edge, so 0 < a < b-1, not 0 <= a < b
         return in_arena(p, self.arena)
 
@@ -250,7 +250,7 @@ class Player(object):
         self.view = np.repeat("*", self.game.arena.size)
         self.view = self.view.reshape(self.game.arena.shape)
         self.view[1:-1, 1:-1] = " "
-        self.updateView()
+        self.update_view()
 
         self.actions = deque()
         self.lastActionTime = 0
@@ -261,7 +261,7 @@ class Player(object):
         for player in self.game.players.itervalues():
             player.ammo += 5
 
-    def updateView(self):
+    def update_view(self):
         if self.game.arena[self.pos] == "*":
             raise excpt.HittingAWall()
 
@@ -277,7 +277,7 @@ class Player(object):
         for c in "<>v^*":
             stopper += (self.game.arena == c)
 
-        def _updateView(s):
+        def _update_view(s):
             stop = stopper[s].cumsum() > 0
             # we want the first 1 to be visible, but not all the rest
             # e.g. [0,0,0,1,1,1,...] -> [F,F,F,F,T,T,...]
@@ -296,13 +296,13 @@ class Player(object):
                 _update((s[0], s[1] + 1))
 
         if self.facing != "^":
-            _updateView(np.s_[y + 1:, x])
+            _update_view(np.s_[y + 1:, x])
         if self.facing != "v":
-            _updateView(np.s_[y-1::-1, x])
+            _update_view(np.s_[y-1::-1, x])
         if self.facing != "<":
-            _updateView(np.s_[y, x + 1:])
+            _update_view(np.s_[y, x + 1:])
         if self.facing != ">":
-            _updateView(np.s_[y, x-1::-1])
+            _update_view(np.s_[y, x-1::-1])
 
         # See everything immediately around you
         self.view[y-1:y+2, x-1:x+2] = self.game.arena[y-1:y+2, x-1:x+2]
@@ -360,7 +360,7 @@ class Player(object):
                         player.scan = False
                         player.msg = "No more ammo for scanning"
 
-        if self.game.inArena(p):
+        if self.game.in_arena(p):
             if self.game.arena[p] == " ":
                 self.pos = p
             if self.game.arena[p] == "A":
@@ -368,22 +368,22 @@ class Player(object):
                 self.pos = p
             elif self.game.arena[p] in "<>v^" and direction == self.facing:
                 # if we're facing someone and move into them, stab
-                other = self.game.findPlayer(p)
+                other = self.game.find_player(p)
                 other.hit(self, "stab")
 
         self.game.arena[self.pos] = self.facing
-        self.updateView()
+        self.update_view()
 
     def turn(self, direction):
         self.facing = direction
-        self.updateView()
+        self.update_view()
         self.game.arena[self.pos] = self.facing
 
     def fire(self, type):
         if self.ammo >= self.game.settings.ammo[type]:
             proj = Projectile(self.pos, self.facing, self, type)
             self.ammo -= self.game.settings.ammo[type]
-            self.game.updateProjectile(proj)
+            self.game.update_projectile(proj)
         else:
             self.msg = "You don't have enough ammo for a {}".format(type)
 
@@ -428,7 +428,7 @@ class Player(object):
                 self.game.arena[self.pos] = " "
                 self.rebirth()
 
-    def updateScore(self):
+    def update_score(self):
         self.score = 0.9998 * self.score
 
     def __str__(self):

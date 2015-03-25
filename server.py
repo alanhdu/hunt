@@ -2,7 +2,7 @@ import gevent
 import markdown
 from flask import Flask, render_template, session
 from flask import Markup
-from flask.ext.socketio import SocketIO, join_room, emit, close_room
+from flask_socketio import SocketIO, join_room, emit, close_room
 
 from game import Game
 import custom_exceptions as excpt
@@ -58,7 +58,7 @@ def begin(msg):
     elif msg["username"] in game.players:
         raise excpt.UsernameTaken(msg["username"])
     else:
-        game.addPlayer(msg["username"])
+        game.add_player(msg["username"])
         session["username"] = msg["username"]
         join_room(msg["username"])
 
