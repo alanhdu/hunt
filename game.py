@@ -137,7 +137,8 @@ class Game(object):
 
         # Update player movements
         for player in self.players.itervalues():
-            player.update()
+            player.update_action()
+            player.update_score()
 
         # regenerate walls
         for i in xrange(len(self.deleted) - 15):
@@ -155,9 +156,8 @@ class Game(object):
                 pos = np.random.randint(0, h), np.random.randint(0, w)
             self.arena[pos] = "A"
 
-        # Update scores
+        # Update View
         for player in self.players.itervalues():
-            player.update_score()
             player.update_view()
 
     def update_projectile(self, old_proj):
@@ -177,29 +177,15 @@ class Game(object):
                 elif self.arena[proj.pos] in "<>v^":
                     player = self.find_player(proj.pos)
                     player.hit(proj.source, proj.type)
-            elif proj.type == "bomb":
+
+        hit = self.arena[proj.pos] != "o"
+        edge = not self.in_arena(proj.pos)
+
+        if proj.type == "bomb" and (hit or edge):
+            if hit:
                 y, x = proj.pos
-
-                for player in self.players.itervalues():
-                    py, px = player.pos
-                    if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
-                        player.hit(proj.source, proj.type)
-
-                # prevent things from clearing the edges
-                h, w = self.arena.shape
-                y_low = max(y - 1, 1)
-                y_high = min(y + 2, h - 1)
-
-                x_low = max(x - 1, 1)
-                x_high = min(x + 2, w - 1)
-
-                for y in xrange(y_low, y_high):
-                    for x in xrange(x_low, x_high):
-                        if self.arena[y, x] == "*":
-                            self.deleted.append(Point(y=y, x=x))
-                        self.arena[y, x] = "#"
-        elif proj.type == "bomb":   # bomb hitting an edge
-            y, x = old_proj.pos
+            elif edge:
+                y, x = old_proj.pos
             for player in self.players.itervalues():
                 py, px = player.pos
                 if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
@@ -216,7 +202,7 @@ class Game(object):
                 for x in xrange(x_low, x_high):
                     if self.arena[y, x] == "*":
                         self.deleted.append(Point(y=y, x=x))
-                    self.arena[y, x] = "#"
+            self.arena[y_low:y_high, x_low:x_high] = "#"
 
     def __str__(self):
         height, width = self.arena.shape
@@ -251,12 +237,12 @@ class Player(object):
         self.pos = Point(np.random.randint(h), np.random.randint(w))
         while self.game.arena[self.pos] == "*":
             self.pos = Point(np.random.randint(h), np.random.randint(w))
+
         self.facing = "<>v^"[np.random.randint(4)]
         self.game.arena[self.pos] = self.facing
 
         # ensure visible edges
-        self.view = np.repeat("*", self.game.arena.size)
-        self.view = self.view.reshape(self.game.arena.shape)
+        self.view = np.repeat("*", h * w).reshape(h, w)
         self.view[1:-1, 1:-1] = " "
         self.update_view()
 
@@ -286,7 +272,7 @@ class Player(object):
             stopper += (arena == c)
 
         def _update_view(y, x):
-            stop = stopper[y, x].cumsum() > 0
+            stop = stopper[y, x].cumsum(dtype=np.int8) > 0
             # we want the first 1 to be visible, but not all the rest
             # e.g. [0,0,0,1,1,1,...] -> [F,F,F,F,T,T,...]
             stop = stop.cumsum() > 1
@@ -313,7 +299,7 @@ class Player(object):
             _update_view(y, slice(x - 1, None, -1))
 
         # See everything immediately around you
-        view[y - 1: y + 2, x - 1:x + 2] = arena[y - 1:y + 2, x - 1:x + 2]
+        view[y-1: y+2, x-1: x+2] = arena[y-1: y+2, x-1: x+2]
 
         # Scan for other player's locations
         if self.scan:
@@ -326,7 +312,7 @@ class Player(object):
             self.actions.popleft()
         self.actions.append((action, args, kwargs))
 
-    def update(self):
+    def update_action(self):
         self.game.arena[self.pos] = self.facing
         self.msg = None
         if self.actions:
