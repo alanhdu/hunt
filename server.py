@@ -55,8 +55,6 @@ def begin(msg):
     global game
     if "username" in session:
         raise excpt.AlreadyLoggedIn()
-    elif msg["username"] in game.players:
-        raise excpt.UsernameTaken(msg["username"])
     else:
         game.add_player(msg["username"])
         session["username"] = msg["username"]

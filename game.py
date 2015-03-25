@@ -16,7 +16,7 @@ def in_arena(p, arena):
     return all(0 < a < b - 1 for a, b in zip(p, arena.shape))
 
 
-def move(p, direction):
+def move(p, direction=None):
     if isinstance(p, Point):
         if direction == "<":
             return Point(x=p.x-1, y=p.y)
@@ -29,8 +29,9 @@ def move(p, direction):
         else:
             raise ValueError("Direction must be <>v^. Got " + direction)
     elif isinstance(p, Projectile):
-        proj = Projectile(move(p.pos, p.direction), p.direction, p.source, 
-                          p.type) 
+        pos = move(p.pos, p.direction)
+        return Projectile(pos, p.direction, p.source, p.type)
+
 
 def generate_maze(width, height):
     if width % 2 == 0:
@@ -269,50 +270,50 @@ class Player(object):
             player.ammo += 5
 
     def update_view(self):
-        if self.game.arena[self.pos] == "*":
+        view, arena = self.view, self.game.arena
+
+        if arena[self.pos] == "*":
             raise excpt.HittingAWall()
 
-        clear = np.zeros(shape=self.view.shape, dtype=bool)
         for c in "<>v^:o":
-            clear += (self.view == c)
-        self.view[clear] = " "
+            view[view == c] = " "
 
-        h, w = self.game.arena.shape
+        h, w = arena.shape
         y, x = self.pos
 
-        stopper = np.zeros(shape=self.view.shape, dtype=bool)
+        stopper = np.zeros(shape=view.shape, dtype=bool)
         for c in "<>v^*":
-            stopper += (self.game.arena == c)
+            stopper += (arena == c)
 
-        def _update_view(s):
-            stop = stopper[s].cumsum() > 0
+        def _update_view(y, x):
+            stop = stopper[y, x].cumsum() > 0
             # we want the first 1 to be visible, but not all the rest
             # e.g. [0,0,0,1,1,1,...] -> [F,F,F,F,T,T,...]
             stop = stop.cumsum() > 1
 
-            def _update(n):
-                self.view[n] = np.where(stop, self.view[n], self.game.arena[n])
-            _update(s)
+            def _update(y, x):
+                view[y, x] = np.where(stop, view[y, x], arena[y, x])
+            _update(y, x)
 
             # do one above and one below
-            if isinstance(s[1], slice):
-                _update((s[0] + 1, s[1]))
-                _update((s[0] - 1, s[1]))
-            elif isinstance(s[0], slice):
-                _update((s[0], s[1] - 1))
-                _update((s[0], s[1] + 1))
+            if isinstance(x, slice):
+                _update(y + 1, x)
+                _update(y - 1, x)
+            elif isinstance(y, slice):
+                _update(y, x - 1)
+                _update(y, x + 1)
 
         if self.facing != "^":
-            _update_view(np.s_[y + 1:, x])
+            _update_view(slice(y + 1, None, None), x)
         if self.facing != "v":
-            _update_view(np.s_[y-1::-1, x])
+            _update_view(slice(y - 1, None, -1), x)
         if self.facing != "<":
-            _update_view(np.s_[y, x + 1:])
+            _update_view(y, slice(x + 1, None, None))
         if self.facing != ">":
-            _update_view(np.s_[y, x-1::-1])
+            _update_view(y, slice(x - 1, None, -1))
 
         # See everything immediately around you
-        self.view[y-1:y+2, x-1:x+2] = self.game.arena[y-1:y+2, x-1:x+2]
+        view[y - 1: y + 2, x - 1:x + 2] = arena[y - 1:y + 2, x - 1:x + 2]
 
         # Scan for other player's locations
         if self.scan:
@@ -350,14 +351,13 @@ class Player(object):
 
     def move(self, direction):
         self.game.arena[self.pos] = ' '
-        p = move(self.pos, direction)
 
         if self.cloak:
             if self.ammo >= self.game.settings.ammo["cloak"]:
                 self.ammo -= self.game.settings.ammo["cloak"]
             else:
                 self.cloak = False
-                self.msg = "No more ammo for cloaking"
+                self.msg = "Not enough ammo for cloaking"
         else:
             for player in self.game.players.itervalues():
                 if player.scan and player is not self:
@@ -365,8 +365,9 @@ class Player(object):
                         player.ammo -= self.game.settings.ammo["scan"]
                     else:
                         player.scan = False
-                        player.msg = "No more ammo for scanning"
+                        player.msg = "Not enough ammo for scanning"
 
+        p = move(self.pos, direction)
         if self.game.in_arena(p):
             if self.game.arena[p] == " ":
                 self.pos = p
@@ -425,7 +426,7 @@ class Player(object):
                 self.msg = "{src} killed you".format(src=src.name)
                 src.msg = "You killed {target}".format(target=self.name)
 
-                src.health += 2     # generate health
+                src.health += 2
                 src.kills += 1
                 self.deaths += 1
 
