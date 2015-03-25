@@ -17,17 +17,20 @@ def in_arena(p, arena):
 
 
 def move(p, direction):
-    if direction == "<":
-        return Point(x=p.x-1, y=p.y)
-    elif direction == ">":
-        return Point(x=p.x+1, y=p.y)
-    elif direction == "^":
-        return Point(x=p.x, y=p.y-1)
-    elif direction == "v":
-        return Point(x=p.x, y=p.y+1)
-    else:
-        raise ValueError("Direction must be <>v^. Got " + direction)
-
+    if isinstance(p, Point):
+        if direction == "<":
+            return Point(x=p.x-1, y=p.y)
+        elif direction == ">":
+            return Point(x=p.x+1, y=p.y)
+        elif direction == "^":
+            return Point(x=p.x, y=p.y-1)
+        elif direction == "v":
+            return Point(x=p.x, y=p.y+1)
+        else:
+            raise ValueError("Direction must be <>v^. Got " + direction)
+    elif isinstance(p, Projectile):
+        proj = Projectile(move(p.pos, p.direction), p.direction, p.source, 
+                          p.type) 
 
 def generate_maze(width, height):
     if width % 2 == 0:
@@ -158,9 +161,8 @@ class Game(object):
 
     def update_projectile(self, old_proj):
         render = {"bullet": ":", "bomb": "o"}
-        proj = Projectile(move(old_proj.pos, old_proj.direction),
-                               old_proj.direction, old_proj.source, 
-                               old_proj.type)
+        proj = move(old_proj)
+
         if self.in_arena(proj.pos):
             if self.arena[proj.pos] == " ":
                 self.arena[proj.pos] = render[proj.type]

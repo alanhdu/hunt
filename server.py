@@ -77,9 +77,9 @@ def logoff():
         game.players.pop(uname)
         close_room(uname)
 
-    if not game.players:  
-         game.thread.kill()
-         game = Game()  # reset board
+    if not game.players:
+        game.thread.kill()
+        game = Game()  # reset board
 
 
 @socketio.on("move")
