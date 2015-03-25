@@ -197,6 +197,11 @@ class Game(object):
                         self.arena[y, x] = "#"
         elif proj.type == "bomb":   # bomb hitting an edge
             y, x = old_proj.pos
+            for player in self.players.itervalues():
+                py, px = player.pos
+                if (y - 1 <= py <= y + 1) and (x - 1 <= px <= x + 1):
+                    player.hit(proj.source, proj.type)
+
             h, w = self.arena.shape
             y_low = max(y - 1, 1)
             y_high = min(y + 2, h - 1)
